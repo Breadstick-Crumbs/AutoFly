@@ -1,5 +1,31 @@
 # Troubleshooting
 
+## Setup refuses to overwrite files
+
+This is intentional. Back up or rename the existing `config.yaml` or `.env`, then run setup again.
+AutoFly never replaces a watch configuration or secret file automatically.
+
+## Native Flight GOAT installation fails
+
+`scripts/install-flight-goat.sh` requires outbound HTTPS plus `curl`, `tar`, and `sha256sum`. It
+supports Linux AMD64 and ARM64. A checksum failure stops installation; do not bypass it. Remove only
+the incomplete version directory reported by the script and retry, or use the Docker path.
+
+Ensure `~/.local/bin` is available to the process running AutoFly:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+flight-goat-pp-cli --version
+```
+
+## Compose setup cannot write config.yaml
+
+On Linux, pass your numeric account IDs:
+
+```bash
+AUTOFLY_UID=$(id -u) AUTOFLY_GID=$(id -g) docker compose run --rm setup
+```
+
 ## Configuration fails
 
 Run `autofly config validate --json`. Errors identify the field and, where possible, watch ID. Common causes are duplicate identifiers, origin=destination, invalid IANA timezones, flexible round trips, and route counts above the explicit safety limit.
@@ -27,4 +53,3 @@ Another cycle is probably running. Inspect processes and scheduler logs; do not 
 ## Playwright failure or CAPTCHA
 
 Playwright is disabled by default and selected only after explicitly disabling Flight GOAT and enabling Playwright. Install `autofly[playwright]` and `playwright install chromium`. AutoFly stops at bot verification and will not solve or bypass it. Diagnostics contain no URL, cookies, headers, HTML, or profile copy; screenshots hide the page header/account UI where possible and remain local. Flexible date discovery is unsupported.
-

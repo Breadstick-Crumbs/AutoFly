@@ -10,6 +10,13 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 - Report missing Flight GOAT executables without an unhandled traceback.
 - Ignore isolated invalid source offers while rejecting wholly malformed result sets.
 
+### Added
+
+- Interactive `autofly setup` wizard with safe config and environment generation.
+- Continuous `autofly run` scheduler for Docker deployments.
+- Checksum-verified native Flight GOAT installer for Linux AMD64 and ARM64.
+- Fresh-environment package smoke tests and multi-architecture Docker CI builds.
+
 ## [0.1.0] - 2026-08-06
 
 ### Added

@@ -1,19 +1,51 @@
 # Self-hosting AutoFly
 
-AutoFly needs outbound HTTPS, Python 3.11+ (3.12 recommended), and Flight GOAT. It needs no GPU, inbound port, firewall change, or permanent web process.
+AutoFly needs outbound HTTPS. It needs no GPU, inbound port, or firewall change. Docker Compose
+is the shortest supported path; native systemd remains the strongest least-privilege option for a
+shared server.
+
+## Docker Compose
+
+Docker 24+ with the Compose plugin is recommended. The image builds Flight GOAT from the exact
+tested source commit and supports Linux AMD64 and ARM64. No port is published.
+
+```bash
+git clone https://github.com/Breadstick-Crumbs/AutoFly.git
+cd AutoFly
+docker compose run --rm setup
+docker compose run --rm autofly doctor
+docker compose run --rm autofly check --all --dry-run
+docker compose up -d autofly
+docker compose ps
+docker compose logs -f autofly
+```
+
+Linux accounts whose UID or GID is not 1000 should pass their IDs to the setup container:
+
+```bash
+AUTOFLY_UID=$(id -u) AUTOFLY_GID=$(id -g) docker compose run --rm setup
+```
+
+The main container runs once immediately and then waits for `scheduler.interval_hours` plus a
+random jitter. It restarts after a host reboot unless explicitly stopped. The named
+`autofly-data` volume preserves SQLite history. Stop the service before copying the volume for a
+backup.
 
 ## Ubuntu/Debian native install
 
+For a personal account without root deployment, run `./scripts/install.sh`; it installs the pinned
+Flight GOAT build and AutoFly under the current user. For a dedicated system account:
+
 ```bash
 sudo apt update
-sudo apt install -y python3.12 python3.12-venv nodejs npm git
+sudo apt install -y python3.12 python3.12-venv git curl tar coreutils
 sudo useradd --system --home /var/lib/autofly --create-home --shell /usr/sbin/nologin autofly
 sudo install -d -o root -g root -m 0755 /opt/autofly /etc/autofly
 sudo install -d -o autofly -g autofly -m 0700 /var/lib/autofly
 sudo git clone https://github.com/Breadstick-Crumbs/AutoFly.git /opt/autofly
 sudo python3.12 -m venv /opt/autofly/.venv
 sudo /opt/autofly/.venv/bin/pip install /opt/autofly
-sudo -H -u autofly npx -y @mvanhorn/printing-press-library@0.1.19 install flight-goat --cli-only
+sudo -H -u autofly /opt/autofly/scripts/install-flight-goat.sh
 sudo cp /opt/autofly/config.example.yaml /etc/autofly/config.yaml
 sudo cp /opt/autofly/.env.example /etc/autofly/autofly.env
 sudo chown root:autofly /etc/autofly/config.yaml /etc/autofly/autofly.env
@@ -21,7 +53,10 @@ sudo chmod 0640 /etc/autofly/config.yaml
 sudo chmod 0640 /etc/autofly/autofly.env
 ```
 
-The npm installer requires Node 20+. If the distribution Node is older, install a maintained Node 20/22 package first. Ensure `flight-goat-pp-cli` is on the service user's `PATH`, or set its absolute path in YAML. Edit configuration paths to `/var/lib/autofly/autofly.db` and `/var/lib/autofly/autofly.lock`, add real secrets, then:
+The installer verifies the official Go archive checksum, installs it without `sudo`, and builds
+Flight GOAT from the commit recorded in the script. Ensure `~autofly/.local/bin` is on the service
+`PATH`, or set the absolute command path in YAML. Edit state paths to `/var/lib/autofly`, add real
+secrets, then:
 
 ```bash
 sudo -u autofly env AUTOFLY_CONFIG=/etc/autofly/config.yaml /opt/autofly/.venv/bin/autofly doctor
@@ -45,22 +80,6 @@ The timer is persistent, adds randomized delay, and uses journald. The service i
 
 Install [`deploy/cron.example`](../deploy/cron.example) with `sudo crontab -u autofly -e`. Prefer systemd where available because missed timer runs are recovered by `Persistent=true`. Keep secret values out of the crontab.
 
-## Docker Compose
-
-The image builds Flight GOAT from the exact tested source commit. No port is published.
-
-```bash
-cp config.example.yaml config.yaml
-cp .env.example .env
-# Edit both files and change database/lock paths to /var/lib/autofly/...
-docker compose build
-docker compose run --rm autofly doctor
-docker compose run --rm autofly check --all --dry-run
-docker compose run --rm autofly check --all
-```
-
-Schedule the last command from the host's systemd timer or cron. The named volume preserves SQLite history. Back it up by stopping checks and copying/exporting the volume; never copy a database while another cycle is writing.
-
 ## AMD64, ARM64, and NVIDIA GX10-class hosts
 
 Python and Go/Flight GOAT support both common Linux architectures. Docker BuildKit builds the Go binary for the target platform; native installs need matching Python, Node, and Flight GOAT binaries. On ARM64 Ubuntu (including NVIDIA GX10 or similar systems), use ARM64 packages and run the same one-shot service. CUDA, GPU drivers, models, and accelerators are irrelevant and unused. Chromium availability matters only when the optional Playwright extra is enabled.
@@ -80,3 +99,18 @@ sudo systemctl start autofly.timer
 ```
 
 Before upgrading, stop the timer and back up `/var/lib/autofly` plus `/etc/autofly`. Roll back by checking out the previous reviewed tag/commit, reinstalling it, restoring the matching database backup only if its schema is newer than the old app supports, running doctor, and restarting the timer. Never downgrade a database in place.
+
+Docker update and rollback:
+
+```bash
+docker compose stop autofly
+git fetch --tags origin
+git checkout <reviewed-tag-or-commit>
+docker compose build --pull
+docker compose run --rm autofly doctor
+docker compose up -d autofly
+```
+
+Roll back by repeating those steps with the previous reviewed tag. Back up `config.yaml`, `.env`,
+and the `autofly-data` volume first. Never use an older application against a database whose schema
+it does not support.

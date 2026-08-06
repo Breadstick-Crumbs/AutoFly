@@ -20,21 +20,51 @@ AutoFly discovers fares and provides a search or booking link. It never purchase
 
 ## Quick start
 
-Python 3.12 is recommended (3.11 is also supported).
+### Docker Compose (recommended)
+
+Docker builds the pinned Flight GOAT version inside the image. No Python, Node, Go, GPU,
+or inbound port is required on the host.
 
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e .
-npx -y @mvanhorn/printing-press-library install flight-goat --cli-only
-autofly init
-autofly config validate
-autofly doctor
-autofly check --all --dry-run
-autofly check --all
+git clone https://github.com/Breadstick-Crumbs/AutoFly.git
+cd AutoFly
+docker compose run --rm setup
+docker compose run --rm autofly doctor
+docker compose run --rm autofly check --all --dry-run
+docker compose up -d autofly
 ```
 
-Copy `.env.example` to a file outside source control, export its values, and edit `config.yaml`. `autofly init` never overwrites an existing configuration.
+The setup wizard creates private `config.yaml` and `.env` files without overwriting existing
+ones. The `autofly` container runs a cycle immediately, then every configured interval plus
+randomized jitter. `docker compose logs -f autofly` shows its status.
+
+On Linux, if your account is not UID/GID 1000, run setup with your IDs so the generated files
+belong to you:
+
+```bash
+AUTOFLY_UID=$(id -u) AUTOFLY_GID=$(id -g) docker compose run --rm setup
+```
+
+### Native Linux
+
+Python 3.12 is recommended (3.11 is supported). The installer uses no `sudo`: it creates
+`.venv`, installs the verified Go toolchain under `~/.local/share/autofly`, and builds the exact
+tested Flight GOAT commit into `~/.local/bin`.
+
+```bash
+git clone https://github.com/Breadstick-Crumbs/AutoFly.git
+cd AutoFly
+./scripts/install.sh
+export PATH="$HOME/.local/bin:$PATH"
+./.venv/bin/autofly setup
+set -a; . ./.env; set +a
+./.venv/bin/autofly doctor --config ./config.yaml
+./.venv/bin/autofly check --all --dry-run --config ./config.yaml
+```
+
+Use the supplied systemd timer for unattended native operation. See
+[`docs/deployment.md`](docs/deployment.md). `autofly init` remains available for users who prefer
+to edit the full starter YAML manually, and never overwrites an existing file.
 
 ```yaml
 version: 1
@@ -59,7 +89,7 @@ The generic webhook emits the versioned schema documented in [`docs/notification
 
 ## Deployment
 
-- Docker: `cp config.example.yaml config.yaml && docker compose run --rm autofly autofly doctor`, then schedule `docker compose run --rm autofly autofly check --all`.
+- Docker: run the setup wizard and `docker compose up -d autofly`; scheduling is built in.
 - Native/systemd/cron: see [`docs/deployment.md`](docs/deployment.md).
 - Troubleshooting: see [`docs/troubleshooting.md`](docs/troubleshooting.md).
 

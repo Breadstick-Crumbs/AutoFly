@@ -5,14 +5,14 @@ services:
       args:
         FLIGHT_GOAT_COMMIT: 854c0465aaa9c275485338c2be7ef0bcaddc4e89
     image: autofly:0.1.0
-    restart: "no"
+    restart: unless-stopped
     env_file:
       - path: .env
         required: false
     volumes:
       - ./config.yaml:/etc/autofly/config.yaml:ro
       - autofly-data:/var/lib/autofly
-    command: ["check", "--all"]
+    command: ["run"]
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -21,6 +21,23 @@ services:
     tmpfs:
       - /tmp:size=64m,mode=1777
 
+  setup:
+    profiles: ["tools"]
+    build:
+      context: .
+      args:
+        FLIGHT_GOAT_COMMIT: 854c0465aaa9c275485338c2be7ef0bcaddc4e89
+    image: autofly:0.1.0
+    user: "${AUTOFLY_UID:-1000}:${AUTOFLY_GID:-1000}"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./:/setup
+    command: ["setup", "--docker", "--config", "/setup/config.yaml", "--env-file", "/setup/.env"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
 volumes:
   autofly-data:
-

@@ -1,5 +1,10 @@
 # Configuration
 
+For a first installation, `autofly setup` interactively creates a validated `config.yaml` and
+private `.env` file. Add `--docker` when the files will be used by Docker Compose. The command
+checks both target paths before prompting and never overwrites either file. Advanced users can copy
+`config.example.yaml` or run `autofly init` and edit every setting directly.
+
 Run `autofly init`, then validate with `autofly config validate`. YAML `version` must be `1`. Errors include the broken field and watch ID where available.
 
 ## Top-level settings
