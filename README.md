@@ -14,6 +14,7 @@ AutoFly is an open-source, self-hosted service that watches configured flight fa
 - SQLite price history, stable itinerary identity, cooldowns, and price-drop/reappearance alerts
 - Telegram and versioned JSON webhook notifications
 - Private responsive dashboard for watch management, fare history, and manual checks
+- Deal explanations, result filters, price trends, and sanitized delivery/source health
 - One-shot CLI suitable for systemd timers, cron, and Docker Compose
 - No AutoFly account, telemetry, public port by default, paid fare API, AI model, or GPU
 

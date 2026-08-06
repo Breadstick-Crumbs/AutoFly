@@ -36,3 +36,12 @@ This file is intentionally short and is updated as milestones complete.
 - [x] Add a live watch-rule preview and clearer validation messages.
 - [x] Clarify watch states, actions, fare results, and search activity.
 - [x] Complete browser, accessibility, responsive, and regression validation; release and deploy.
+
+## v0.2 phase 4: results and trust
+
+- [x] Persist deal qualification and human-readable rejection reasons with a forward-only migration.
+- [x] Add fare filters, deal-only results, and per-route lowest-price trends.
+- [x] Surface notification delivery and sanitized source-failure status.
+- [x] Keep pre-migration observations explicitly marked as not evaluated.
+- [x] Add manual CI dispatch and explicit all-branch push triggers.
+- [ ] Complete migration, browser, package, CI, release, and live deployment validation.

@@ -7,11 +7,14 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 ### Added
 
 - Plain-language dashboard onboarding, setup-readiness indicators, and a live watch-rule preview.
+- Persisted deal qualification explanations, fare-result filters, and per-route price trends.
+- Sanitized notification-delivery and fare-source diagnostic summaries.
 
 ### Changed
 
 - Group the watch editor into guided route, travel, and deal sections with clearer field help.
 - Clarify monitoring status, watch actions, fare-result labels, and search activity for new users.
+- Explicitly distinguish qualifying deals, missed rules, and older observations that were not evaluated.
 
 ## [0.2.0] - 2026-08-07
 
