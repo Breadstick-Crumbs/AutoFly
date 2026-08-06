@@ -107,6 +107,20 @@ def test_exact_cycle_first_alert_and_deduplication(tmp_path: Path) -> None:
     assert first["notifications_sent"] == 1
     assert second["notifications_sent"] == 0
     assert len(notifier.sent) == 1
+    observations = db.dashboard_history("sample")
+    assert observations[0]["qualifies"] is True
+    assert observations[0]["qualification_reason"] == "qualified"
+    db.close()
+
+
+def test_cycle_persists_non_qualifying_reason(tmp_path: Path) -> None:
+    db = Database(tmp_path / "db.sqlite")
+    engine = WatchEngine(config(), db, MockSource(["30000"]), [])
+    result = engine.run()
+    observation = db.dashboard_history("sample")[0]
+    assert result["qualifying_count"] == 0
+    assert observation["qualifies"] is False
+    assert "price" in observation["qualification_reason"]
     db.close()
 
 

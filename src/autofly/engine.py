@@ -257,8 +257,15 @@ class WatchEngine:
     def _process_offer(
         self, cycle_id: str, watch: WatchConfig, offer: FareOffer, metrics: CycleMetrics
     ) -> None:
-        state = self.db.observe(cycle_id, watch.id, offer)
-        if not evaluate_offer(offer, watch).qualifies:
+        evaluation = evaluate_offer(offer, watch)
+        state = self.db.observe(
+            cycle_id,
+            watch.id,
+            offer,
+            qualifies=evaluation.qualifies,
+            qualification_reason=evaluation.reason,
+        )
+        if not evaluation.qualifies:
             return
         metrics.qualifying_count += 1
         for notifier in self.notifiers:
