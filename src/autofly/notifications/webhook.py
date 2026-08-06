@@ -6,6 +6,7 @@ import socket
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -23,14 +24,15 @@ class WebhookNotifier:
         config: WebhookConfig,
         *,
         client: httpx.Client | None = None,
-        resolver: Callable[..., list[tuple]] = socket.getaddrinfo,
+        resolver: Callable[..., list[tuple[Any, ...]]] = socket.getaddrinfo,
         sleeper: Callable[[float], None] = time.sleep,
     ):
         self.config = config
-        self.url = os.environ.get(config.url_env)
-        if not self.url:
+        url = os.environ.get(config.url_env)
+        if not url:
             raise NotificationError(f"Webhook requires {config.url_env}")
-        validate_webhook_url(self.url, config.allow_private_networks, resolver)
+        validate_webhook_url(url, config.allow_private_networks, resolver)
+        self.url: str = url
         self.client = client or httpx.Client(timeout=config.timeout_seconds, follow_redirects=False)
         self._sleep = sleeper
 
@@ -77,7 +79,9 @@ def webhook_payload(notification: Notification, idempotency_key: str) -> dict[st
 
 
 def validate_webhook_url(
-    url: str, allow_private: bool, resolver: Callable[..., list[tuple]] = socket.getaddrinfo
+    url: str,
+    allow_private: bool,
+    resolver: Callable[..., list[tuple[Any, ...]]] = socket.getaddrinfo,
 ) -> None:
     parsed = urlparse(url)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:

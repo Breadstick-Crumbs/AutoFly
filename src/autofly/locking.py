@@ -4,6 +4,7 @@ import os
 from contextlib import suppress
 from pathlib import Path
 from types import TracebackType
+from typing import BinaryIO
 
 from autofly.errors import LockUnavailable
 
@@ -13,7 +14,7 @@ class ProcessLock:
 
     def __init__(self, path: Path):
         self.path = path
-        self._file: object | None = None
+        self._file: BinaryIO | None = None
 
     def acquire(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -31,7 +32,10 @@ class ProcessLock:
             else:
                 import fcntl
 
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(  # type: ignore[attr-defined]
+                    handle.fileno(),
+                    fcntl.LOCK_EX | fcntl.LOCK_NB,  # type: ignore[attr-defined]
+                )
         except OSError as exc:
             if "handle" in locals():
                 handle.close()
@@ -49,19 +53,19 @@ class ProcessLock:
             if os.name == "nt":
                 import msvcrt
 
-                handle.seek(0)  # type: ignore[attr-defined]
+                handle.seek(0)
                 with suppress(OSError):
-                    msvcrt.locking(  # type: ignore[attr-defined]
+                    msvcrt.locking(
                         handle.fileno(),
                         msvcrt.LK_UNLCK,
-                        1,  # type: ignore[attr-defined]
+                        1,
                     )
             else:
                 import fcntl
 
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)  # type: ignore[attr-defined]
         finally:
-            handle.close()  # type: ignore[attr-defined]
+            handle.close()
             self._file = None
 
     def __enter__(self) -> ProcessLock:

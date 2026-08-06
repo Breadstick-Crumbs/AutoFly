@@ -1,0 +1,33 @@
+version: 1
+database:
+  path: ./data/autofly.db
+scheduler:
+  interval_hours: 6
+  jitter_minutes: 10
+  timezone: UTC
+  max_queries_per_cycle: 50
+sources:
+  flight_goat:
+    enabled: true
+    command: flight-goat-pp-cli
+    pace_seconds: 5
+notifications:
+  telegram:
+    enabled: false
+  webhook:
+    enabled: false
+watches:
+  - id: sample-cok-dxb
+    origins: [COK]
+    destinations: [DXB]
+    trip: {type: one_way, adults: 1, cabin: economy}
+    dates: {mode: rolling, days_from_now: 1, days_to: 30}
+    deal: {currency: INR, maximum_price: 25000, max_stops: 1}
+  - id: sample-lhr-jfk
+    enabled: false
+    origins: [LHR]
+    destinations: [JFK]
+    trip: {type: round_trip, adults: 1, cabin: economy}
+    dates: {mode: exact, departure: 2026-12-10, return: 2026-12-20}
+    deal: {currency: GBP, maximum_price: 450, max_stops: 1}
+

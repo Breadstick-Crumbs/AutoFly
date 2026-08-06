@@ -8,9 +8,8 @@ __pycache__/
 dist/
 build/
 .env
-config.yaml
+/config.yaml
 data/
 diagnostics/
 .coverage
 htmlcov/
-

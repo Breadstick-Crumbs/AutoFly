@@ -25,6 +25,14 @@ class SearchRequest(BaseModel):
     max_stops: int | None = Field(default=None, ge=0, le=3)
     max_layover_minutes: int | None = Field(default=None, ge=0)
 
+    @field_validator("origin", "destination", "currency")
+    @classmethod
+    def valid_code(cls, value: str) -> str:
+        normalized = value.upper()
+        if len(normalized) != 3 or not normalized.isascii() or not normalized.isalpha():
+            raise ValueError("must be a three-letter ASCII code")
+        return normalized
+
 
 class FareOffer(BaseModel):
     source: str

@@ -21,6 +21,7 @@ from autofly.notifications.base import Notification, NotificationProvider
 from autofly.notifications.telegram import TelegramNotifier
 from autofly.notifications.webhook import WebhookNotifier
 from autofly.sources.flight_goat import FlightGoatSource
+from autofly.sources.playwright import PlaywrightSource
 
 app = typer.Typer(help="Self-hosted flight-fare monitoring.", no_args_is_help=True)
 config_app = typer.Typer(help="Inspect and validate configuration.")
@@ -48,6 +49,14 @@ def _notifiers(config: AppConfig) -> list[NotificationProvider]:
     if config.notifications.webhook.enabled:
         result.append(WebhookNotifier(config.notifications.webhook))
     return result
+
+
+def _source(config: AppConfig) -> Any:
+    if config.sources.flight_goat.enabled:
+        return FlightGoatSource(config.sources.flight_goat)
+    if config.sources.playwright.enabled:
+        return PlaywrightSource(config.sources.playwright)
+    raise ConfigError("Enable at least one fare source")
 
 
 def _emit(value: Any, json_output: bool) -> None:
@@ -151,7 +160,7 @@ def check_command(
     try:
         loaded = _load(config)
         db = _database(loaded)
-        source = FlightGoatSource(loaded.sources.flight_goat)
+        source = _source(loaded)
         notifiers = [] if dry_run else _notifiers(loaded)
         engine = WatchEngine(loaded, db, source, notifiers)
         if dry_run:
@@ -184,17 +193,22 @@ def doctor_command(
         with ProcessLock(loaded.scheduler.lock_path):
             pass
         checks.append({"check": "process_lock", "status": "ok", "detail": "available"})
-        source_path = shutil.which(loaded.sources.flight_goat.command)
-        if source_path is None and not Path(loaded.sources.flight_goat.command).is_file():
-            raise ConfigError(
-                f"Flight GOAT executable not found: {loaded.sources.flight_goat.command}"
+        if not loaded.sources.flight_goat.enabled and not loaded.sources.playwright.enabled:
+            raise ConfigError("Enable at least one fare source")
+        if loaded.sources.flight_goat.enabled:
+            source_path = shutil.which(loaded.sources.flight_goat.command)
+            if source_path is None and not Path(loaded.sources.flight_goat.command).is_file():
+                raise ConfigError(
+                    f"Flight GOAT executable not found: {loaded.sources.flight_goat.command}"
+                )
+            source = FlightGoatSource(loaded.sources.flight_goat)
+            version_text = source.version()
+            expected = loaded.sources.flight_goat.expected_version
+            status = "ok" if not expected or expected in version_text else "warning"
+            checks.append(
+                {"check": "flight_goat", "status": status, "detail": version_text.strip()}
             )
-        source = FlightGoatSource(loaded.sources.flight_goat)
-        version_text = source.version()
-        expected = loaded.sources.flight_goat.expected_version
-        status = "ok" if not expected or expected in version_text else "warning"
-        checks.append({"check": "flight_goat", "status": status, "detail": version_text.strip()})
-        source.doctor()
+            source.doctor()
         if loaded.sources.playwright.enabled:
             available = importlib.util.find_spec("playwright") is not None
             checks.append(
