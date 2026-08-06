@@ -47,6 +47,7 @@ class FlightGoatConfig(BaseModel):
     max_output_bytes: int = Field(default=5_000_000, ge=1024, le=50_000_000)
     expected_version: str | None = "2026.8.1"
     max_retries: int = Field(default=2, ge=0, le=5)
+    max_verifications_per_route: int = Field(default=5, ge=1, le=30)
 
     @field_validator("command")
     @classmethod

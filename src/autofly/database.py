@@ -146,13 +146,26 @@ class Database:
         )
 
     def start_request(self, cycle_id: str, request: SearchRequest, source: str) -> int:
+        return self.start_request_payload(
+            cycle_id, request.watch_id, source, request.model_dump(mode="json")
+        )
+
+    def start_request_payload(
+        self,
+        cycle_id: str,
+        watch_id: str,
+        source: str,
+        payload: dict[str, Any],
+    ) -> int:
         cursor = self.connection.execute(
             "INSERT INTO search_requests("
             "cycle_id, watch_id, source, request_json, status, started_at) "
             "VALUES (?, ?, ?, ?, 'running', ?)",
-            (cycle_id, request.watch_id, source, request.model_dump_json(), _now()),
+            (cycle_id, watch_id, source, json.dumps(payload, default=str), _now()),
         )
-        return int(cursor.lastrowid)
+        if cursor.lastrowid is None:
+            raise RuntimeError("SQLite did not return a search request ID")
+        return cursor.lastrowid
 
     def finish_request(self, request_id: int, status: str, error: str | None = None) -> None:
         self.connection.execute(
@@ -224,14 +237,22 @@ class Database:
         return len(missing)
 
     def last_successful_alert(
-        self, watch_id: str, itinerary_id: str
+        self, watch_id: str, itinerary_id: str, provider: str | None = None
     ) -> tuple[Decimal, datetime] | None:
-        row = self.connection.execute(
-            "SELECT price, attempted_at FROM notification_attempts "
-            "WHERE watch_id=? AND itinerary_id=? AND status='success' "
-            "ORDER BY attempted_at DESC LIMIT 1",
-            (watch_id, itinerary_id),
-        ).fetchone()
+        if provider:
+            row = self.connection.execute(
+                "SELECT price, attempted_at FROM notification_attempts "
+                "WHERE watch_id=? AND itinerary_id=? AND status='success' AND provider=? "
+                "ORDER BY attempted_at DESC LIMIT 1",
+                (watch_id, itinerary_id, provider),
+            ).fetchone()
+        else:
+            row = self.connection.execute(
+                "SELECT price, attempted_at FROM notification_attempts "
+                "WHERE watch_id=? AND itinerary_id=? AND status='success' "
+                "ORDER BY attempted_at DESC LIMIT 1",
+                (watch_id, itinerary_id),
+            ).fetchone()
         if row is None or row["price"] is None:
             return None
         return Decimal(row["price"]), datetime.fromisoformat(row["attempted_at"])

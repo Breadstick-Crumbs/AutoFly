@@ -24,6 +24,7 @@ dependencies = [
   "pydantic-settings>=2.4,<3",
   "PyYAML>=6.0.2,<7",
   "typer>=0.12,<1",
+  "tzdata>=2025.2; platform_system == 'Windows'",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +40,7 @@ dev = [
 ]
 
 [project.scripts]
-autofly = "autofly.cli:app"
+autofly = "autofly.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/autofly"]
@@ -61,4 +62,3 @@ ignore = ["S101"]
 python_version = "3.11"
 strict = true
 packages = ["autofly"]
-

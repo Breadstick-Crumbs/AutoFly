@@ -1,3 +1,3 @@
-from autofly.cli import app
+from autofly.cli import main
 
-app()
+main()
