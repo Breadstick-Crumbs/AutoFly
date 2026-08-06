@@ -8,7 +8,7 @@ import pytest
 from autofly.config import FlightGoatConfig
 from autofly.errors import SourceError, SourceOutputError, SourceRateLimited
 from autofly.models import SearchRequest
-from autofly.sources.flight_goat import FlightGoatSource, parse_dates, parse_flights
+from autofly.sources.flight_goat import FlightGoatSource, parse_dates, parse_flights, run_limited
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -106,6 +106,29 @@ def test_malformed_json() -> None:
     )
     with pytest.raises(SourceOutputError, match="malformed JSON"):
         source.search(request())
+
+
+def test_output_size_limit() -> None:
+    import sys
+
+    with pytest.raises(SourceOutputError, match="exceeded"):
+        run_limited([sys.executable, "-c", "print('x' * 1000)"], 5, 100)
+
+
+def test_exact_round_trip_arguments_and_normalization() -> None:
+    seen: list[str] = []
+
+    def runner(args: list[str], timeout: float, limit: int):
+        seen.extend(args)
+        return 0, fixture("flight_goat_flights.json"), b""
+
+    round_trip = request().model_copy(
+        update={"trip_type": "round_trip", "return_date": date(2026, 9, 20)}
+    )
+    offers = FlightGoatSource(FlightGoatConfig(), runner=runner).search(round_trip)
+    assert seen[seen.index("--return") + 1] == "2026-09-20"
+    assert offers[0].trip_type == "round_trip"
+    assert offers[0].return_date == date(2026, 9, 20)
 
 
 @pytest.mark.live

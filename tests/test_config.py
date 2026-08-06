@@ -10,7 +10,7 @@ from autofly.dates import strategy_for
 def base_config() -> dict:
     return {
         "version": 1,
-        "scheduler": {"max_queries_per_cycle": 20},
+        "scheduler": {"max_queries_per_cycle": 30},
         "watches": [
             {
                 "id": "sample",

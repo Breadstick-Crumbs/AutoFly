@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from autofly.config import AppConfig, ExactDates, WatchConfig
 from autofly.database import Database, cooldown_elapsed
@@ -73,13 +74,14 @@ class WatchEngine:
         selected = [
             watch
             for watch in self.config.watches
-            if watch.enabled and (watch_ids is None or watch.id in watch_ids)
+            if (watch.enabled if watch_ids is None else watch.id in watch_ids)
         ]
         unknown = (watch_ids or set()) - {watch.id for watch in self.config.watches}
         if unknown:
             raise QueryBudgetExceeded(f"Unknown watch ID(s): {', '.join(sorted(unknown))}")
+        effective_today = today or datetime.now(ZoneInfo(self.config.scheduler.timezone)).date()
         if dry_run:
-            return self._dry_run(selected, today or date.today())
+            return self._dry_run(selected, effective_today)
         cycle_id = self.db.start_cycle()
         metrics = CycleMetrics()
         budget = QueryBudget(self.config.scheduler.max_queries_per_cycle)
@@ -98,7 +100,7 @@ class WatchEngine:
                         origin,
                         destination,
                         budget,
-                        today or date.today(),
+                        effective_today,
                         metrics,
                     )
                     metrics.candidate_count += len(offers)

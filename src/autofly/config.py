@@ -232,10 +232,20 @@ class AppConfig(BaseModel):
         duplicates = sorted({item for item in ids if ids.count(item) > 1})
         if duplicates:
             raise ValueError(f"duplicate watch IDs: {', '.join(duplicates)}")
-        route_count = sum(len(watch.route_pairs()) for watch in self.watches if watch.enabled)
-        if route_count > self.scheduler.max_queries_per_cycle:
+        estimated_queries = sum(
+            len(watch.route_pairs())
+            * (
+                1
+                if isinstance(watch.dates, ExactDates)
+                else 1 + self.sources.flight_goat.max_verifications_per_route
+            )
+            for watch in self.watches
+            if watch.enabled
+        )
+        if estimated_queries > self.scheduler.max_queries_per_cycle:
             raise ValueError(
-                f"route count {route_count} exceeds scheduler.max_queries_per_cycle "
+                f"worst-case query count {estimated_queries} exceeds "
+                "scheduler.max_queries_per_cycle "
                 f"({self.scheduler.max_queries_per_cycle}); explicitly raise the limit"
             )
         return self

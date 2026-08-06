@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -7,6 +7,7 @@ import pytest
 from autofly.config import AppConfig
 from autofly.database import Database
 from autofly.engine import WatchEngine
+from autofly.errors import SourceError
 from autofly.models import FareOffer, SearchRequest
 from autofly.notifications.base import Notification
 from autofly.sources.base import DateCandidate
@@ -149,9 +150,54 @@ def test_rolling_uses_discovery_then_capped_verification(tmp_path: Path) -> None
 def test_query_budget_enforced(tmp_path: Path) -> None:
     db = Database(tmp_path / "db.sqlite")
     source = MockSource()
-    result = WatchEngine(config(rolling=True, budget=2), db, source, []).run()
+    loaded = config(rolling=True, budget=3)
+    loaded.scheduler.max_queries_per_cycle = 2
+    result = WatchEngine(loaded, db, source, []).run()
     assert result["status"] != "success"
     assert len(source.search_calls) == 1
+    db.close()
+
+
+def test_reappearance_after_cooldown(tmp_path: Path) -> None:
+    db = Database(tmp_path / "db.sqlite")
+    source = MockSource()
+    notifier = MockNotifier()
+    engine = WatchEngine(config(), db, source, [notifier])
+    engine.run()
+    original_search = source.search
+    source.search = lambda request: []  # type: ignore[method-assign]
+    engine.run()
+    db.connection.execute(
+        "UPDATE notification_attempts SET attempted_at=?",
+        ((datetime.now(UTC) - timedelta(hours=25)).isoformat(),),
+    )
+    source.search = original_search  # type: ignore[method-assign]
+    result = engine.run()
+    assert result["notifications_sent"] == 1
+    assert notifier.sent[-1][0].reason == "reappeared"
+    db.close()
+
+
+def test_health_warning_after_three_failures_and_recovery(tmp_path: Path) -> None:
+    db = Database(tmp_path / "db.sqlite")
+    source = MockSource()
+    notifier = MockNotifier()
+    engine = WatchEngine(config(), db, source, [notifier])
+
+    def fail(request: SearchRequest) -> list[FareOffer]:
+        raise SourceError("upstream unavailable")
+
+    source.search = fail  # type: ignore[method-assign]
+    engine.run()
+    engine.run()
+    engine.run()
+    assert [item[0].event for item in notifier.sent] == ["health_unhealthy"]
+    source.search = lambda request: []  # type: ignore[method-assign]
+    engine.run()
+    assert [item[0].event for item in notifier.sent] == [
+        "health_unhealthy",
+        "health_recovered",
+    ]
     db.close()
 
 
