@@ -1,11 +1,10 @@
 # syntax=docker/dockerfile:1.7
 FROM golang:1.26.5-bookworm AS flight-goat-build
 ARG FLIGHT_GOAT_COMMIT=854c0465aaa9c275485338c2be7ef0bcaddc4e89
-RUN git clone --filter=blob:none --no-checkout https://github.com/mvanhorn/printing-press-library.git /src/printing-press-library \
-    && cd /src/printing-press-library \
-    && git checkout "${FLIGHT_GOAT_COMMIT}" -- library/travel/flight-goat
-WORKDIR /src/printing-press-library/library/travel/flight-goat
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/flight-goat-pp-cli ./cmd/flight-goat-pp-cli
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOBIN=/out go install \
+    "github.com/mvanhorn/printing-press-library/library/travel/flight-goat/cmd/flight-goat-pp-cli@${FLIGHT_GOAT_COMMIT}"
 
 FROM python:3.12-slim-bookworm AS runtime
 ARG APP_VERSION=0.1.0
@@ -28,4 +27,3 @@ USER autofly
 VOLUME ["/var/lib/autofly"]
 ENTRYPOINT ["autofly"]
 CMD ["doctor"]
-

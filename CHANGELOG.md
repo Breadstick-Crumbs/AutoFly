@@ -16,6 +16,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 - Continuous `autofly run` scheduler for Docker deployments.
 - Checksum-verified native Flight GOAT installer for Linux AMD64 and ARM64.
 - Fresh-environment package smoke tests and multi-architecture Docker CI builds.
+- Faster pinned Docker builds using the Flight GOAT Go module directly.
 
 ## [0.1.0] - 2026-08-06
 
