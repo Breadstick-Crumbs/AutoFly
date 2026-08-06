@@ -331,6 +331,72 @@ class Database:
         params.append(limit)
         return [dict(row) for row in self.connection.execute(query, params).fetchall()]
 
+    def recent_cycles(self, limit: int = 10) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT id, started_at, ended_at, status, metrics_json FROM search_cycles "
+            "ORDER BY started_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            result.append(
+                {
+                    "id": row["id"],
+                    "started_at": row["started_at"],
+                    "ended_at": row["ended_at"],
+                    "status": row["status"],
+                    "metrics": json.loads(row["metrics_json"]),
+                }
+            )
+        return result
+
+    def dashboard_history(
+        self, watch_id: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        rows = self.history(watch_id, limit)
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            offer = json.loads(row.pop("offer_json"))
+            result.append(
+                {
+                    **row,
+                    "source": offer.get("source"),
+                    "origin": offer.get("origin"),
+                    "destination": offer.get("destination"),
+                    "departure_at": offer.get("departure_at"),
+                    "return_date": offer.get("return_date"),
+                    "airline": offer.get("airline"),
+                    "stops": offer.get("stops"),
+                    "booking_url": offer.get("booking_url"),
+                }
+            )
+        return result
+
+    def dashboard_summary(self) -> dict[str, Any]:
+        itinerary = self.connection.execute(
+            "SELECT COUNT(*) AS total, "
+            "SUM(CASE WHEN available=1 THEN 1 ELSE 0 END) AS available "
+            "FROM itineraries"
+        ).fetchone()
+        notifications = self.connection.execute(
+            "SELECT COUNT(*) AS total, "
+            "SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) AS successful "
+            "FROM notification_attempts"
+        ).fetchone()
+        health = self.connection.execute(
+            "SELECT consecutive_failures, unhealthy_notified, updated_at "
+            "FROM health_state WHERE id=1"
+        ).fetchone()
+        return {
+            "itineraries": int(itinerary["total"] or 0),
+            "available_itineraries": int(itinerary["available"] or 0),
+            "notification_attempts": int(notifications["total"] or 0),
+            "successful_notifications": int(notifications["successful"] or 0),
+            "consecutive_failures": int(health["consecutive_failures"]),
+            "unhealthy_notified": bool(health["unhealthy_notified"]),
+            "health_updated_at": health["updated_at"],
+        }
+
 
 def cooldown_elapsed(last_alert_at: datetime, cooldown_hours: float, now: datetime) -> bool:
     return now - last_alert_at >= timedelta(hours=cooldown_hours)

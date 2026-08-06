@@ -290,6 +290,10 @@ def load_config(path: Path) -> AppConfig:
         for key in keys[:-1]:
             target = target.setdefault(key, {})
         target[keys[-1]] = os.environ[env_name]
+    return validate_config_data(raw)
+
+
+def validate_config_data(raw: object) -> AppConfig:
     try:
         return AppConfig.model_validate(raw)
     except ValidationError as exc:

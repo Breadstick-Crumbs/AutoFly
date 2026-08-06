@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import ipaddress
 import json
 import os
 import shutil
@@ -298,6 +299,51 @@ def run_command(
         except KeyboardInterrupt:
             typer.echo("AutoFly scheduler stopped.")
             return
+
+
+@app.command("web")
+def web_command(
+    host: Annotated[str, typer.Option(help="Listen address.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(min=1, max=65535)] = 8080,
+    config: Annotated[Path | None, typer.Option("--config", "-c")] = None,
+    allow_remote: Annotated[
+        bool, typer.Option(help="Explicitly allow a non-loopback listen address.")
+    ] = False,
+) -> None:
+    """Serve the private dashboard (loopback-only by default)."""
+    password = os.environ.get("AUTOFLY_WEB_PASSWORD")
+    try:
+        loopback = host == "localhost" or ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        _abort(ConfigError("--host must be an IP address or localhost"))
+    if not loopback and not allow_remote:
+        _abort(ConfigError("Non-loopback dashboard binding requires --allow-remote"))
+    if not loopback and (not password or len(password) < 16):
+        _abort(
+            ConfigError(
+                "Non-loopback dashboard binding requires AUTOFLY_WEB_PASSWORD "
+                "with at least 16 characters"
+            )
+        )
+    try:
+        import uvicorn
+
+        from autofly.dashboard.app import create_app
+    except ImportError:
+        _abort(ConfigError('Dashboard dependencies missing; install "autofly[web]"'))
+    path = _config_path(config)
+    try:
+        load_config(path)
+    except AutoFlyError as exc:
+        _abort(exc)
+    typer.echo(f"AutoFly dashboard listening on http://{host}:{port}")
+    uvicorn.run(
+        create_app(path, password=password),
+        host=host,
+        port=port,
+        proxy_headers=False,
+        server_header=False,
+    )
 
 
 @app.command("doctor")
