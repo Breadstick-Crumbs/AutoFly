@@ -13,7 +13,7 @@ from typing import Any
 
 from autofly.models import FareOffer, SearchRequest
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS itineraries (
 CREATE TABLE IF NOT EXISTS fare_observations (
     id INTEGER PRIMARY KEY, cycle_id TEXT NOT NULL, watch_id TEXT NOT NULL,
     itinerary_id TEXT NOT NULL, observed_at TEXT NOT NULL, price TEXT NOT NULL,
-    currency TEXT NOT NULL, offer_json TEXT NOT NULL,
+    currency TEXT NOT NULL, offer_json TEXT NOT NULL, qualifies INTEGER,
+    qualification_reason TEXT,
     FOREIGN KEY(cycle_id) REFERENCES search_cycles(id)
 );
 CREATE INDEX IF NOT EXISTS idx_observations_watch_time
@@ -123,6 +124,21 @@ class Database:
                     "INSERT INTO schema_version(version, applied_at) VALUES (?, ?)",
                     (1, _now()),
                 )
+            if version < 2:
+                columns = {
+                    row["name"]
+                    for row in conn.execute("PRAGMA table_info(fare_observations)").fetchall()
+                }
+                if "qualifies" not in columns:
+                    conn.execute("ALTER TABLE fare_observations ADD COLUMN qualifies INTEGER")
+                if "qualification_reason" not in columns:
+                    conn.execute(
+                        "ALTER TABLE fare_observations ADD COLUMN qualification_reason TEXT"
+                    )
+                conn.execute(
+                    "INSERT INTO schema_version(version, applied_at) VALUES (?, ?)",
+                    (2, _now()),
+                )
 
     def start_cycle(self) -> str:
         cycle_id = str(uuid.uuid4())
@@ -173,7 +189,15 @@ class Database:
             (_now(), status, error, request_id),
         )
 
-    def observe(self, cycle_id: str, watch_id: str, offer: FareOffer) -> ObservationState:
+    def observe(
+        self,
+        cycle_id: str,
+        watch_id: str,
+        offer: FareOffer,
+        *,
+        qualifies: bool | None = None,
+        qualification_reason: str | None = None,
+    ) -> ObservationState:
         identity = offer.itinerary_id
         now = offer.observed_at.isoformat()
         payload = json.dumps(offer.safe_dict(), sort_keys=True)
@@ -212,8 +236,19 @@ class Database:
             )
             conn.execute(
                 "INSERT INTO fare_observations(cycle_id, watch_id, itinerary_id, observed_at, "
-                "price, currency, offer_json) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (cycle_id, watch_id, identity, now, str(offer.price), offer.currency, payload),
+                "price, currency, offer_json, qualifies, qualification_reason) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    cycle_id,
+                    watch_id,
+                    identity,
+                    now,
+                    str(offer.price),
+                    offer.currency,
+                    payload,
+                    int(qualifies) if qualifies is not None else None,
+                    qualification_reason,
+                ),
             )
         return state
 
@@ -339,24 +374,51 @@ class Database:
         ).fetchall()
         result: list[dict[str, Any]] = []
         for row in rows:
+            display_status = row["status"]
+            if display_status == "running":
+                started_at = datetime.fromisoformat(row["started_at"])
+                if datetime.now(UTC) - started_at > timedelta(hours=1):
+                    display_status = "interrupted"
             result.append(
                 {
                     "id": row["id"],
                     "started_at": row["started_at"],
                     "ended_at": row["ended_at"],
                     "status": row["status"],
+                    "display_status": display_status,
                     "metrics": json.loads(row["metrics_json"]),
                 }
             )
         return result
 
     def dashboard_history(
-        self, watch_id: str | None = None, limit: int = 50
+        self,
+        watch_id: str | None = None,
+        limit: int = 50,
+        *,
+        qualifying: bool | None = None,
+        origin: str | None = None,
+        destination: str | None = None,
+        max_stops: int | None = None,
+        airline: str | None = None,
     ) -> list[dict[str, Any]]:
-        rows = self.history(watch_id, limit)
+        rows = self.history(watch_id, max(5000, limit * 20))
         result: list[dict[str, Any]] = []
         for row in rows:
             offer = json.loads(row.pop("offer_json"))
+            if qualifying is not None and (
+                row["qualifies"] is None or bool(row["qualifies"]) is not qualifying
+            ):
+                continue
+            if origin and offer.get("origin") != origin:
+                continue
+            if destination and offer.get("destination") != destination:
+                continue
+            stops = offer.get("stops")
+            if max_stops is not None and (stops is None or stops > max_stops):
+                continue
+            if airline and airline.casefold() not in str(offer.get("airline") or "").casefold():
+                continue
             result.append(
                 {
                     **row,
@@ -368,9 +430,63 @@ class Database:
                     "airline": offer.get("airline"),
                     "stops": offer.get("stops"),
                     "booking_url": offer.get("booking_url"),
+                    "qualifies": bool(row["qualifies"]) if row["qualifies"] is not None else None,
+                    "qualification_reason": row["qualification_reason"],
                 }
             )
+            if len(result) >= limit:
+                break
         return result
+
+    def dashboard_trend(
+        self, watch_id: str, origin: str, destination: str, limit: int = 40
+    ) -> list[dict[str, Any]]:
+        rows = self.history(watch_id, 5000)
+        cycles: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            offer = json.loads(row["offer_json"])
+            if offer.get("origin") != origin or offer.get("destination") != destination:
+                continue
+            price = Decimal(row["price"])
+            existing = cycles.get(row["cycle_id"])
+            if existing is None or price < existing["price_decimal"]:
+                cycles[row["cycle_id"]] = {
+                    "observed_at": row["observed_at"],
+                    "price": float(price),
+                    "price_decimal": price,
+                    "currency": row["currency"],
+                }
+        ordered = sorted(cycles.values(), key=lambda item: item["observed_at"])[-limit:]
+        for item in ordered:
+            item.pop("price_decimal")
+        return ordered
+
+    def dashboard_notifications(self, limit: int = 20) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT watch_id, provider, alert_reason, price, attempted_at, status, error "
+            "FROM notification_attempts ORDER BY attempted_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [
+            {
+                "watch_id": row["watch_id"],
+                "provider": row["provider"],
+                "reason": row["alert_reason"],
+                "price": row["price"],
+                "attempted_at": row["attempted_at"],
+                "status": row["status"],
+                "error": "Delivery failed; check the service logs." if row["error"] else None,
+            }
+            for row in rows
+        ]
+
+    def dashboard_failures(self, limit: int = 20) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT watch_id, source, category, occurred_at FROM source_failures "
+            "ORDER BY occurred_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
 
     def dashboard_summary(self) -> dict[str, Any]:
         itinerary = self.connection.execute(

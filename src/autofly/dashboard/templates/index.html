@@ -90,11 +90,22 @@
         <section id="history" class="section panel" aria-labelledby="history-title">
           <div class="section-heading">
             <div><p class="eyebrow">What AutoFly found</p><h2 id="history-title">Recent fare results</h2><p class="section-copy">These are observed prices, not necessarily deals. Your watch rules decide when to alert you.</p></div>
-            <select id="history-watch" aria-label="Filter results by watch"><option value="">All watches</option></select>
           </div>
+          <div class="results-toolbar" aria-label="Fare result filters">
+            <label>Watch<select id="history-watch"><option value="">All watches</option></select></label>
+            <label>Route<select id="history-route"><option value="">All routes</option></select></label>
+            <label>Stops<select id="history-stops"><option value="">Any stops</option><option value="0">Direct only</option><option value="1">Up to 1 stop</option><option value="2">Up to 2 stops</option></select></label>
+            <label>Airline<input id="history-airline" type="search" maxlength="80" placeholder="Any airline"></label>
+            <label class="deal-filter"><input id="history-deals" type="checkbox"><span>Deals only<small>Show fares that passed every saved rule.</small></span></label>
+          </div>
+          <article class="trend-card">
+            <div class="trend-heading"><div><span class="eyebrow">Lowest observed fare</span><strong id="trend-title">Choose a watch and route</strong></div><span id="trend-range" class="muted-dark"></span></div>
+            <svg id="price-chart" viewBox="0 0 800 180" role="img" aria-label="Price history chart"></svg>
+            <p id="trend-empty" class="chart-empty">Select one watch and route to see its lowest observed fare in each search.</p>
+          </article>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Found</th><th>Route</th><th>Departure</th><th>Airline</th><th>Stops</th><th>Price</th><th></th></tr></thead>
+              <thead><tr><th>Found</th><th>Route</th><th>Departure</th><th>Airline</th><th>Stops</th><th>Price</th><th>Rule check</th><th></th></tr></thead>
               <tbody id="history-body"></tbody>
             </table>
             <p id="history-empty" class="empty-state" hidden>No fares recorded yet. Run a fare search or wait for the next automatic check.</p>
@@ -103,6 +114,10 @@
 
         <section id="activity" class="section panel cycles-panel" aria-labelledby="cycles-title">
           <div class="section-heading"><div><p class="eyebrow">Search log</p><h2 id="cycles-title">Recent activity</h2><p class="section-copy">A cycle is one scheduled or manually started fare search.</p></div></div>
+          <div class="trust-grid">
+            <article><div class="mini-heading"><strong>Notification delivery</strong><span id="delivery-summary">Loading…</span></div><div id="delivery-list" class="event-list"></div></article>
+            <article><div class="mini-heading"><strong>Fare-source issues</strong><span>Sanitized diagnostics</span></div><div id="failure-list" class="event-list"></div></article>
+          </div>
           <div id="cycle-list" class="cycle-list"></div>
         </section>
       </main>

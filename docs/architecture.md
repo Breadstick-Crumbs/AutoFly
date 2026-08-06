@@ -28,6 +28,10 @@ validated watches -> route/date strategy -> query budget + process lock
 
 SQLite uses schema versioning, foreign keys, a busy timeout, WAL mode, and `BEGIN IMMEDIATE` transactions. It stores cycle/request audit data, immutable observations, current itinerary availability, notification attempts, failures, rate limits, and health state. Itinerary identity excludes changing price. Delivery state is provider-specific, so a failed webhook can retry without duplicating a successful Telegram alert.
 
+Schema version 2 stores the qualification boolean and reason beside each observation. This keeps
+dashboard filtering and explanations faithful to the exact watch snapshot evaluated during the
+search. Older rows remain nullable and are never retroactively classified.
+
 The OS advisory lock prevents overlapping cycles. systemd/cron/Docker invoke the same one-shot command. Structured cycle logs contain IDs and counts but never secrets, cookies, headers, or profiles.
 
 The optional FastAPI dashboard reads sanitized summaries from SQLite. Watch mutations pass through

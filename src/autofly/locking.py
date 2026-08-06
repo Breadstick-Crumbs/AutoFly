@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import os
+import sys
 from contextlib import suppress
 from pathlib import Path
 from types import TracebackType
 from typing import BinaryIO
 
 from autofly.errors import LockUnavailable
+
+if sys.platform == "win32":
+    import msvcrt
+else:
+    import fcntl
 
 
 class ProcessLock:
@@ -25,16 +31,12 @@ class ProcessLock:
                 handle.write(b"0")
                 handle.flush()
             handle.seek(0)
-            if os.name == "nt":
-                import msvcrt
-
+            if sys.platform == "win32":
                 msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
             else:
-                import fcntl
-
-                fcntl.flock(  # type: ignore[attr-defined]
+                fcntl.flock(
                     handle.fileno(),
-                    fcntl.LOCK_EX | fcntl.LOCK_NB,  # type: ignore[attr-defined]
+                    fcntl.LOCK_EX | fcntl.LOCK_NB,
                 )
         except OSError as exc:
             if "handle" in locals():
@@ -50,9 +52,7 @@ class ProcessLock:
             return
         handle = self._file
         try:
-            if os.name == "nt":
-                import msvcrt
-
+            if sys.platform == "win32":
                 handle.seek(0)
                 with suppress(OSError):
                     msvcrt.locking(
@@ -61,9 +61,7 @@ class ProcessLock:
                         1,
                     )
             else:
-                import fcntl
-
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)  # type: ignore[attr-defined]
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         finally:
             handle.close()
             self._file = None

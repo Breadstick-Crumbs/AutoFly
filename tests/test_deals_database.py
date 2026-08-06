@@ -133,7 +133,13 @@ def test_database_migration_observation_and_notification(tmp_path: Path) -> None
     version = db.connection.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
     assert version == SCHEMA_VERSION
     cycle = db.start_cycle()
-    state = db.observe(cycle, "deal", offer())
+    state = db.observe(
+        cycle,
+        "deal",
+        offer(),
+        qualifies=True,
+        qualification_reason="qualified",
+    )
     assert state.is_new
     lowered = offer(price="17000", observed_at="2026-08-07T12:00:00+00:00")
     state2 = db.observe(cycle, "deal", lowered)
@@ -149,6 +155,11 @@ def test_database_migration_observation_and_notification(tmp_path: Path) -> None
         idempotency_key="key-1",
     )
     assert db.last_successful_alert("deal", lowered.itinerary_id)[0] == Decimal("17000")  # type: ignore[index]
+    history = db.dashboard_history("deal", qualifying=True)
+    assert history[0]["qualifies"] is True
+    assert history[0]["qualification_reason"] == "qualified"
+    assert db.dashboard_trend("deal", "COK", "DXB")[0]["price"] == 17000.0
+    assert db.dashboard_notifications()[0]["status"] == "success"
     with pytest.raises(sqlite3.IntegrityError):
         db.record_notification(
             cycle_id=cycle,
@@ -161,6 +172,32 @@ def test_database_migration_observation_and_notification(tmp_path: Path) -> None
             idempotency_key="key-1",
         )
     db.close()
+
+
+def test_database_migrates_v1_observations_for_rule_explanations(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.sqlite"
+    connection = sqlite3.connect(path)
+    connection.executescript(
+        """
+        CREATE TABLE schema_version (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
+        INSERT INTO schema_version(version, applied_at) VALUES (1, '2026-08-06');
+        CREATE TABLE fare_observations (
+            id INTEGER PRIMARY KEY, cycle_id TEXT NOT NULL, watch_id TEXT NOT NULL,
+            itinerary_id TEXT NOT NULL, observed_at TEXT NOT NULL, price TEXT NOT NULL,
+            currency TEXT NOT NULL, offer_json TEXT NOT NULL
+        );
+        """
+    )
+    connection.close()
+
+    migrated = Database(path)
+    columns = {
+        row["name"]
+        for row in migrated.connection.execute("PRAGMA table_info(fare_observations)").fetchall()
+    }
+    assert {"qualifies", "qualification_reason"} <= columns
+    assert migrated.connection.execute("SELECT MAX(version) FROM schema_version").fetchone()[0] == 2
+    migrated.close()
 
 
 def test_concurrent_database_access(tmp_path: Path) -> None:

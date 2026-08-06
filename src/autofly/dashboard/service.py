@@ -72,11 +72,52 @@ class DashboardService:
             "jobs": jobs,
         }
 
-    def history(self, watch_id: str | None, limit: int) -> list[dict[str, Any]]:
+    def history(
+        self,
+        watch_id: str | None,
+        limit: int,
+        *,
+        qualifying: bool | None = None,
+        origin: str | None = None,
+        destination: str | None = None,
+        max_stops: int | None = None,
+        airline: str | None = None,
+    ) -> list[dict[str, Any]]:
         config = load_config(self.config_path)
         database = Database(config.database.path, config.database.busy_timeout_seconds)
         try:
-            return database.dashboard_history(watch_id, limit)
+            return database.dashboard_history(
+                watch_id,
+                limit,
+                qualifying=qualifying,
+                origin=origin,
+                destination=destination,
+                max_stops=max_stops,
+                airline=airline,
+            )
+        finally:
+            database.close()
+
+    def trend(
+        self, watch_id: str, origin: str, destination: str, limit: int
+    ) -> list[dict[str, Any]]:
+        config = load_config(self.config_path)
+        if watch_id not in {watch.id for watch in config.watches}:
+            raise ConfigError(f"Unknown watch ID: {watch_id}")
+        database = Database(config.database.path, config.database.busy_timeout_seconds)
+        try:
+            return database.dashboard_trend(watch_id, origin, destination, limit)
+        finally:
+            database.close()
+
+    def delivery_status(self, limit: int) -> dict[str, list[dict[str, Any]]]:
+        config = load_config(self.config_path)
+        database = Database(config.database.path, config.database.busy_timeout_seconds)
+        try:
+            return {
+                "notifications": database.dashboard_notifications(limit),
+                "source_failures": database.dashboard_failures(limit),
+            }
         finally:
             database.close()
 

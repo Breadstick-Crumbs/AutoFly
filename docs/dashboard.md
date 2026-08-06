@@ -60,5 +60,16 @@ The interface never returns or edits bot tokens, webhook URLs, environment value
 profiles. Mutation requests require dashboard-origin headers in addition to authentication. A
 manual check can send real notifications; the interface asks for confirmation first.
 
+## Understanding fare results
+
+Every new observation stores whether it passed the watch rules and the exact rejection category.
+The dashboard translates those categories into plain language and can filter to qualifying deals.
+Observations created before schema version 2 are shown as **Not evaluated**; AutoFly does not
+retroactively guess their status. They remain useful for route price trends.
+
+Price charts show the lowest observed fare for the selected route in each search cycle. They are
+historical observations, not predictions or guarantees. Notification delivery status and source
+failures are summarized without returning raw upstream errors, tokens, URLs, or response bodies.
+
 Arbitrary valid three-letter source identifiers remain accepted. Airport suggestions are a
 convenience list, not a claim that every metropolitan code is supported by Flight GOAT.
