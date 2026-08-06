@@ -9,6 +9,8 @@ dist/
 build/
 .env
 /config.yaml
+/config.yaml.bak
+/autofly-config/
 data/
 diagnostics/
 .coverage

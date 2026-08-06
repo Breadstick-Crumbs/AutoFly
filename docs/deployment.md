@@ -1,13 +1,13 @@
 # Self-hosting AutoFly
 
-AutoFly needs outbound HTTPS. It needs no GPU, inbound port, or firewall change. Docker Compose
-is the shortest supported path; native systemd remains the strongest least-privilege option for a
-shared server.
+AutoFly needs outbound HTTPS. Its scheduler needs no GPU, inbound port, or firewall change. Docker
+Compose is the shortest supported path; native systemd remains the strongest least-privilege
+option for a shared server. The optional dashboard stays on loopback unless deliberately changed.
 
 ## Docker Compose
 
 Docker 24+ with the Compose plugin is recommended. The image builds Flight GOAT from the exact
-tested source commit and supports Linux AMD64 and ARM64. No port is published.
+tested source commit and supports Linux AMD64 and ARM64. The scheduler publishes no port.
 
 ```bash
 git clone https://github.com/Breadstick-Crumbs/AutoFly.git
@@ -30,6 +30,34 @@ The main container runs once immediately and then waits for `scheduler.interval_
 random jitter. It restarts after a host reboot unless explicitly stopped. The named
 `autofly-data` volume preserves SQLite history. Stop the service before copying the volume for a
 backup.
+
+Setup stores configuration at `autofly-config/config.yaml`. The scheduler mounts that directory
+read-only. To enable the private dashboard, add a random value of at least 16 characters as
+`AUTOFLY_WEB_PASSWORD` in `.env`, then run:
+
+```bash
+docker compose --profile web up -d autofly web
+ssh -L 8080:127.0.0.1:8080 user@your-server
+```
+
+Open `http://127.0.0.1:8080` locally and sign in as `autofly`. Compose binds only to the server's
+loopback interface. See [`dashboard.md`](dashboard.md) for the security model and reverse-proxy
+requirements.
+
+### Upgrading an existing Compose checkout from 0.1
+
+The 0.1 Compose setup stored `config.yaml` in the repository root. Preserve it and copy it into the
+directory used by 0.2 before starting the new containers:
+
+```bash
+mkdir -p autofly-config
+cp -p config.yaml autofly-config/config.yaml
+docker compose run --rm autofly doctor
+```
+
+Keep the original until the upgraded service and dashboard have both been verified. If the
+container runs under a custom UID/GID, ensure that account owns `autofly-config/` so dashboard
+edits can use atomic replacement.
 
 ## Ubuntu/Debian native install
 
@@ -111,6 +139,6 @@ docker compose run --rm autofly doctor
 docker compose up -d autofly
 ```
 
-Roll back by repeating those steps with the previous reviewed tag. Back up `config.yaml`, `.env`,
-and the `autofly-data` volume first. Never use an older application against a database whose schema
-it does not support.
+Roll back by repeating those steps with the previous reviewed tag. Back up
+`autofly-config/config.yaml`, `.env`, and the `autofly-data` volume first. Never use an older
+application against a database whose schema it does not support.

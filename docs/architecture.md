@@ -1,6 +1,8 @@
 # Architecture
 
-AutoFly is a one-shot pipeline; it does not need a web server.
+AutoFly's monitoring core is a one-shot pipeline and does not depend on a web server. The optional
+dashboard is a separate administration surface that calls the same validated configuration,
+database, engine, query-budget, and process-lock layers.
 
 ```text
 YAML + environment
@@ -28,10 +30,14 @@ SQLite uses schema versioning, foreign keys, a busy timeout, WAL mode, and `BEGI
 
 The OS advisory lock prevents overlapping cycles. systemd/cron/Docker invoke the same one-shot command. Structured cycle logs contain IDs and counts but never secrets, cookies, headers, or profiles.
 
+The optional FastAPI dashboard reads sanitized summaries from SQLite. Watch mutations pass through
+full Pydantic validation and atomically replace YAML while retaining one backup. Manual checks run
+as a single in-process background job and still acquire the OS lock. Static browser assets are
+bundled locally; no CDN, analytics, telemetry, or browser-side secret access is used.
+
 ## Extension boundaries
 
 - Fare sources implement `autofly.sources.base.FareSource`.
 - Notifiers implement `autofly.notifications.base.NotificationProvider`.
 - Date modes implement the `DateStrategy` protocol.
 - Database changes increment `SCHEMA_VERSION` and add forward-only migrations.
-

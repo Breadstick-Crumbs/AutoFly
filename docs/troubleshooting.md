@@ -2,7 +2,8 @@
 
 ## Setup refuses to overwrite files
 
-This is intentional. Back up or rename the existing `config.yaml` or `.env`, then run setup again.
+This is intentional. Back up or rename the existing `autofly-config/config.yaml` or `.env`, then
+run setup again.
 AutoFly never replaces a watch configuration or secret file automatically.
 
 ## Native Flight GOAT installation fails
@@ -25,6 +26,18 @@ On Linux, pass your numeric account IDs:
 ```bash
 AUTOFLY_UID=$(id -u) AUTOFLY_GID=$(id -g) docker compose run --rm setup
 ```
+
+## Dashboard rejects a remote bind
+
+Non-loopback dashboard listeners require both `--allow-remote` and an
+`AUTOFLY_WEB_PASSWORD` of at least 16 characters. Prefer the default loopback listener with an SSH
+tunnel. See [`dashboard.md`](dashboard.md).
+
+## Dashboard edits fail with a permission error
+
+The dashboard must be able to create a temporary file next to `config.yaml` for atomic updates.
+With Compose, use `autofly-config/config.yaml` and ensure the directory belongs to the UID/GID
+selected by `AUTOFLY_UID` and `AUTOFLY_GID`. Do not mount a single config file over the directory.
 
 ## Configuration fails
 
