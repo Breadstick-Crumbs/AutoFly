@@ -6,6 +6,6 @@
 - [x] Integrate Flight GOAT safely and add an opt-in Playwright fallback.
 - [x] Add Telegram/webhook notification providers and the CLI/cycle runner.
 - [x] Add deployment assets, contributor documentation, CI, and security policy.
-- [ ] Run offline validation, package and Docker builds, commit milestones, and push.
+- [x] Run offline validation and package smoke tests; commit and push the branch. Docker build is delegated to CI because Docker is unavailable on the development host.
 
 This file is intentionally short and is updated as milestones complete.
