@@ -189,6 +189,18 @@ def test_assets_are_served_without_external_dependencies(tmp_path: Path) -> None
     assert "@import" not in styles.text
 
 
+def test_results_filters_use_compact_progressive_controls(tmp_path: Path) -> None:
+    page = TestClient(create_app(config_file(tmp_path))).get("/")
+
+    assert page.status_code == 200
+    assert 'id="history-scope"' in page.text
+    assert 'id="history-result-count"' in page.text
+    assert 'id="history-reset"' in page.text
+    assert 'id="history-more-filters"' in page.text
+    assert "More filters" in page.text
+    assert "Choose a watch to filter by route." in page.text
+
+
 def test_results_filters_trends_and_delivery_diagnostics_are_sanitized(tmp_path: Path) -> None:
     path = config_file(tmp_path)
     database = Database(tmp_path / "autofly.db")

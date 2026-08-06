@@ -60,6 +60,15 @@ function readableName(value) {
   return value.replaceAll(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function compactAirportList(codes) {
+  if (!codes.length) return "None";
+  return codes.length === 1 ? codes[0] : `${codes[0]} +${codes.length - 1}`;
+}
+
+function historyWatchLabel(watch) {
+  return `${readableName(watch.id)} — ${compactAirportList(watch.origins)} → ${compactAirportList(watch.destinations)}`;
+}
+
 function stopsDescription(value) {
   if (value === null) return "any number of stops";
   if (value === 0) return "direct flights only";
@@ -177,13 +186,33 @@ function renderCycles(cycles) {
 function updateHistoryFilter(watches) {
   const select = $("history-watch");
   const current = select.value;
-  select.replaceChildren(new Option("All watches", ""));
-  watches.forEach((watch) => select.add(new Option(watch.id, watch.id)));
+  select.replaceChildren(new Option("All flight watches", ""));
+  watches.forEach((watch) => select.add(new Option(historyWatchLabel(watch), watch.id)));
   select.value = watches.some((watch) => watch.id === current) ? current : "";
   updateRouteFilter();
 }
 
+function updateHistorySummary(resultCount) {
+  const watchId = $("history-watch").value;
+  const watch = state.payload?.watches.find((item) => item.id === watchId);
+  const route = $("history-route").value.split("|");
+  const stops = $("history-stops").value;
+  const airline = $("history-airline").value.trim();
+  const dealsOnly = $("history-deals").checked;
+  let scope = watch ? readableName(watch.id) : "All recent fares";
+  if (route.length === 2) scope = `${route[0]} → ${route[1]}`;
+  if (dealsOnly) scope += " · Deals only";
+  $("history-scope").textContent = scope;
+  if (Number.isInteger(resultCount)) {
+    $("history-result-count").textContent = `${resultCount} result${resultCount === 1 ? "" : "s"} shown`;
+  }
+  const extraCount = Number(Boolean(stops)) + Number(Boolean(airline));
+  $("history-filter-count").textContent = extraCount ? `${extraCount} applied` : "No extra filters";
+  $("history-reset").hidden = !(watchId || stops || airline || dealsOnly);
+}
+
 async function loadHistory() {
+  updateHistorySummary();
   const watch = $("history-watch").value;
   const route = $("history-route").value.split("|");
   const params = new URLSearchParams({ limit: "50" });
@@ -199,6 +228,7 @@ async function loadHistory() {
   const body = $("history-body");
   body.replaceChildren();
   $("history-empty").hidden = rows.length > 0;
+  updateHistorySummary(rows.length);
   for (const item of rows) {
     const row = document.createElement("tr");
     const values = [
@@ -236,6 +266,7 @@ function updateRouteFilter() {
   const watchId = $("history-watch").value;
   select.replaceChildren(new Option(watchId ? "All routes" : "Choose a watch first", ""));
   select.disabled = !watchId;
+  $("history-route-help").textContent = watchId ? "Choose one route to see its price trend." : "Available after you choose a watch.";
   const watch = state.payload?.watches.find((item) => item.id === watchId);
   if (!watch) return;
   for (const origin of watch.origins) {
@@ -244,6 +275,16 @@ function updateRouteFilter() {
     }
   }
   select.value = [...select.options].some((option) => option.value === current) ? current : "";
+}
+
+function resetHistoryFilters() {
+  $("history-watch").value = "";
+  updateRouteFilter();
+  $("history-stops").value = "";
+  $("history-airline").value = "";
+  $("history-deals").checked = false;
+  $("history-more-filters").open = false;
+  loadHistory();
 }
 
 function qualificationDescription(qualifies, reason) {
@@ -616,6 +657,7 @@ $("history-watch").addEventListener("change", () => {
 $("history-route").addEventListener("change", loadHistory);
 $("history-stops").addEventListener("change", loadHistory);
 $("history-deals").addEventListener("change", loadHistory);
+$("history-reset").addEventListener("click", resetHistoryFilters);
 let airlineTimer;
 $("history-airline").addEventListener("input", () => {
   window.clearTimeout(airlineTimer);

@@ -91,12 +91,25 @@
           <div class="section-heading">
             <div><p class="eyebrow">What AutoFly found</p><h2 id="history-title">Recent fare results</h2><p class="section-copy">These are observed prices, not necessarily deals. Your watch rules decide when to alert you.</p></div>
           </div>
-          <div class="results-toolbar" aria-label="Fare result filters">
-            <label>Watch<select id="history-watch"><option value="">All watches</option></select></label>
-            <label>Route<select id="history-route"><option value="">All routes</option></select></label>
-            <label>Stops<select id="history-stops"><option value="">Any stops</option><option value="0">Direct only</option><option value="1">Up to 1 stop</option><option value="2">Up to 2 stops</option></select></label>
-            <label>Airline<input id="history-airline" type="search" maxlength="80" placeholder="Any airline"></label>
-            <label class="deal-filter"><input id="history-deals" type="checkbox"><span>Deals only<small>Show fares that passed every saved rule.</small></span></label>
+          <div class="results-filters" aria-label="Fare result filters">
+            <div class="filter-heading">
+              <div><span class="eyebrow">Viewing</span><strong id="history-scope">All recent fares</strong><small id="history-result-count" aria-live="polite">Loading results…</small></div>
+              <button id="history-reset" class="filter-reset" type="button" hidden>Clear filters</button>
+            </div>
+            <div class="primary-filters">
+              <label>Flight watch<select id="history-watch"><option value="">All flight watches</option></select><small>Choose a watch to filter by route.</small></label>
+              <label>Route<select id="history-route"><option value="">Choose a watch first</option></select><small id="history-route-help">Available after you choose a watch.</small></label>
+            </div>
+            <div class="filter-actions">
+              <label class="deal-filter"><input id="history-deals" type="checkbox"><span>Deals only<small>Only fares that passed every rule</small></span></label>
+              <details id="history-more-filters" class="more-filters">
+                <summary><span>More filters</span><small id="history-filter-count">No extra filters</small></summary>
+                <div class="secondary-filters">
+                  <label>Maximum stops<select id="history-stops"><option value="">Any stops</option><option value="0">Direct only</option><option value="1">Up to 1 stop</option><option value="2">Up to 2 stops</option></select></label>
+                  <label>Airline<input id="history-airline" type="search" maxlength="80" placeholder="Any airline" autocomplete="off"></label>
+                </div>
+              </details>
+            </div>
           </div>
           <article class="trend-card">
             <div class="trend-heading"><div><span class="eyebrow">Lowest observed fare</span><strong id="trend-title">Choose a watch and route</strong></div><span id="trend-range" class="muted-dark"></span></div>
