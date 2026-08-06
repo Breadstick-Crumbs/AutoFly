@@ -122,11 +122,27 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 34px 46px 70px; }
 
 select, input { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #cbc9c1; border-radius: 9px; color: var(--ink); background: #fff; }
 select:focus, input:focus, button:focus-visible { outline: 3px solid rgba(8,127,120,.18); border-color: var(--teal); }
-.results-toolbar { margin-top: 22px; padding: 16px; display: grid; grid-template-columns: 1.1fr 1.2fr .8fr 1fr 1.1fr; gap: 12px; border-radius: 13px; background: #f4f2ec; }
-.results-toolbar label { font-size: .68rem; }
-.deal-filter { min-height: 42px; display: flex; align-items: center; gap: 8px; align-self: end; }
+.results-filters { margin-top: 22px; padding: 18px; display: grid; gap: 16px; border: 1px solid #e1ded6; border-radius: 14px; background: #f7f5ef; }
+.filter-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.filter-heading > div { min-width: 0; display: grid; gap: 3px; }
+.filter-heading strong { overflow: hidden; font-family: Georgia, serif; font-size: 1.05rem; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.filter-heading small { color: var(--muted); font-size: .68rem; }
+.filter-reset { min-height: 34px; padding: 0 11px; flex: none; border: 1px solid #c9d7d3; border-radius: 9px; color: var(--teal-dark); background: #fff; font-size: .7rem; font-weight: 750; }
+.filter-reset:hover { background: #edf7f4; }
+.primary-filters, .secondary-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.primary-filters label, .secondary-filters label { min-width: 0; font-size: .7rem; }
+.primary-filters select, .secondary-filters select, .secondary-filters input { min-width: 0; }
+.filter-actions { display: flex; align-items: stretch; gap: 12px; }
+.deal-filter { min-height: 48px; padding: 8px 12px; display: flex; align-items: center; gap: 9px; border: 1px solid #d7d5cd; border-radius: 10px; background: #fff; }
 .deal-filter input { width: 18px; min-height: 18px; flex: none; accent-color: var(--teal); }
 .deal-filter span { display: grid; gap: 2px; }
+.more-filters { position: relative; min-width: 190px; flex: 1; border: 1px solid #d7d5cd; border-radius: 10px; background: #fff; }
+.more-filters summary { min-height: 48px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--ink); cursor: pointer; font-size: .72rem; font-weight: 750; list-style: none; }
+.more-filters summary::-webkit-details-marker { display: none; }
+.more-filters summary::after { content: "+"; color: var(--teal); font-size: 1rem; }
+.more-filters[open] summary::after { content: "−"; }
+.more-filters summary small { margin-left: auto; color: var(--muted); font-size: .64rem; font-weight: 500; }
+.secondary-filters { padding: 13px; border-top: 1px solid #e5e2da; }
 .trend-card { margin-top: 16px; padding: 18px 20px 12px; border: 1px solid #d8ddd7; border-radius: 14px; background: #fbfcf9; }
 .trend-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; }
 .trend-heading strong { margin-top: 5px; display: block; font-family: Georgia, serif; font-size: 1.1rem; font-weight: 500; }
@@ -207,7 +223,6 @@ label small { color: #7a888a; font-size: .65rem; font-weight: 500; line-height: 
   .privacy-note { display: none; }
   main { padding: 28px 24px 60px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .results-toolbar { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 680px) {
@@ -215,7 +230,7 @@ label small { color: #7a888a; font-size: .65rem; font-weight: 500; line-height: 
   nav { display: none; }
   .topbar, .section-heading { align-items: flex-start; }
   .topbar { flex-direction: column; }
-  .hero-grid, .watch-grid, .form-grid, .guide-grid, .results-toolbar, .trust-grid { grid-template-columns: 1fr; }
+  .hero-grid, .watch-grid, .form-grid, .guide-grid, .trust-grid { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .hero-card { min-height: 300px; padding: 26px; }
   .panel { padding: 20px; }
@@ -225,5 +240,10 @@ label small { color: #7a888a; font-size: .65rem; font-weight: 500; line-height: 
   .guide-panel summary { padding: 18px; }
   .guide-grid { padding: 0 18px 18px; }
   .readiness { padding: 13px 18px; gap: 10px; }
+  .results-filters { padding: 14px; gap: 14px; }
+  .primary-filters, .secondary-filters { grid-template-columns: 1fr; }
+  .filter-actions { flex-direction: column; }
+  .deal-filter { order: 2; }
+  .more-filters { min-width: 0; }
   #watch-form { padding: 22px 18px; }
 }
