@@ -163,7 +163,8 @@ function renderCycles(cycles) {
   for (const cycle of cycles) {
     const row = element("div", "cycle-row");
     const left = element("span", "");
-    const status = element("span", `status-pill ${cycle.status === "success" ? "good" : "bad"}`, cycle.status === "success" ? "Completed" : readableName(cycle.status));
+    const cycleStatus = cycle.display_status || cycle.status;
+    const status = element("span", `status-pill ${cycleStatus === "success" ? "good" : "bad"}`, cycleStatus === "success" ? "Completed" : readableName(cycleStatus));
     left.append(status);
     const metrics = cycle.metrics || {};
     const searches = metrics.successful_searches || 0;
@@ -179,11 +180,22 @@ function updateHistoryFilter(watches) {
   select.replaceChildren(new Option("All watches", ""));
   watches.forEach((watch) => select.add(new Option(watch.id, watch.id)));
   select.value = watches.some((watch) => watch.id === current) ? current : "";
+  updateRouteFilter();
 }
 
 async function loadHistory() {
   const watch = $("history-watch").value;
-  const rows = await api(`/api/history?limit=50${watch ? `&watch_id=${encodeURIComponent(watch)}` : ""}`);
+  const route = $("history-route").value.split("|");
+  const params = new URLSearchParams({ limit: "50" });
+  if (watch) params.set("watch_id", watch);
+  if (route.length === 2) {
+    params.set("origin", route[0]);
+    params.set("destination", route[1]);
+  }
+  if ($("history-stops").value) params.set("max_stops", $("history-stops").value);
+  if ($("history-airline").value.trim()) params.set("airline", $("history-airline").value.trim());
+  if ($("history-deals").checked) params.set("qualifying", "true");
+  const rows = await api(`/api/history?${params}`);
   const body = $("history-body");
   body.replaceChildren();
   $("history-empty").hidden = rows.length > 0;
@@ -198,6 +210,12 @@ async function loadHistory() {
     ];
     values.forEach((value) => row.append(element("td", "", value)));
     row.append(element("td", "price", money(item.price, item.currency)));
+    const evaluation = qualificationDescription(item.qualifies, item.qualification_reason);
+    const ruleCell = element("td", "evaluation-cell");
+    const badge = element("span", `rule-result ${evaluation.className}`, evaluation.label);
+    badge.title = evaluation.detail;
+    ruleCell.append(badge, element("small", "rule-detail", evaluation.detail));
+    row.append(ruleCell);
     const action = element("td", "");
     if (item.booking_url) {
       const link = element("a", "", "Open fare");
@@ -209,6 +227,167 @@ async function loadHistory() {
     row.append(action);
     body.append(row);
   }
+  await loadTrend();
+}
+
+function updateRouteFilter() {
+  const select = $("history-route");
+  const current = select.value;
+  const watchId = $("history-watch").value;
+  select.replaceChildren(new Option(watchId ? "All routes" : "Choose a watch first", ""));
+  select.disabled = !watchId;
+  const watch = state.payload?.watches.find((item) => item.id === watchId);
+  if (!watch) return;
+  for (const origin of watch.origins) {
+    for (const destination of watch.destinations) {
+      select.add(new Option(`${origin} → ${destination}`, `${origin}|${destination}`));
+    }
+  }
+  select.value = [...select.options].some((option) => option.value === current) ? current : "";
+}
+
+function qualificationDescription(qualifies, reason) {
+  if (qualifies === true) return { className: "deal", label: "Deal", detail: "Passed every watch rule." };
+  if (qualifies === null) return { className: "unknown", label: "Not evaluated", detail: "Recorded before rule explanations were stored." };
+  const reasons = {
+    "route does not match watch": "Route does not match this watch.",
+    "currency mismatch; AutoFly does not convert currency": "Currency differs from the watch; AutoFly does not convert it.",
+    "price is not strictly below maximum_price": "Price is at or above your alert limit.",
+    "stop limit exceeded or unknown": "Too many stops, or stop information is missing.",
+    "layover limit exceeded or unknown": "A layover is too long, or layover information is missing.",
+    "self-transfer status is true or unknown": "Self-transfer is required or could not be confirmed.",
+    "no usable search link": "No usable booking or search link was supplied.",
+  };
+  return { className: "no-deal", label: "Rule missed", detail: reasons[reason] || "Did not pass every saved rule." };
+}
+
+async function loadTrend() {
+  const watch = $("history-watch").value;
+  const route = $("history-route").value.split("|");
+  const chart = $("price-chart");
+  const empty = $("trend-empty");
+  chart.replaceChildren();
+  if (!watch || route.length !== 2) {
+    chart.hidden = true;
+    empty.hidden = false;
+    $("trend-title").textContent = "Choose a watch and route";
+    $("trend-range").textContent = "";
+    return;
+  }
+  const params = new URLSearchParams({ watch_id: watch, origin: route[0], destination: route[1] });
+  const points = await api(`/api/trend?${params}`);
+  $("trend-title").textContent = `${route[0]} → ${route[1]}`;
+  if (!points.length) {
+    chart.hidden = true;
+    empty.hidden = false;
+    empty.textContent = "No price history for this route yet.";
+    $("trend-range").textContent = "";
+    return;
+  }
+  chart.hidden = false;
+  empty.hidden = true;
+  drawTrend(chart, points);
+  const prices = points.map((point) => Number(point.price));
+  $("trend-range").textContent = `${money(Math.min(...prices), points[0].currency)} lowest · ${points.length} search${points.length === 1 ? "" : "es"}`;
+}
+
+function drawTrend(chart, points) {
+  const namespace = "http://www.w3.org/2000/svg";
+  const width = 800;
+  const height = 180;
+  const padding = { left: 80, right: 24, top: 18, bottom: 38 };
+  const prices = points.map((point) => Number(point.price));
+  const minimum = Math.min(...prices);
+  const maximum = Math.max(...prices);
+  const spread = Math.max(maximum - minimum, maximum * 0.05, 1);
+  const low = Math.max(0, minimum - spread * 0.2);
+  const high = maximum + spread * 0.2;
+  const x = (index) => padding.left + (points.length === 1 ? (width - padding.left - padding.right) / 2 : index * (width - padding.left - padding.right) / (points.length - 1));
+  const y = (price) => padding.top + (high - price) * (height - padding.top - padding.bottom) / (high - low);
+  for (const fraction of [0, 0.5, 1]) {
+    const gridY = padding.top + fraction * (height - padding.top - padding.bottom);
+    const line = document.createElementNS(namespace, "line");
+    line.setAttribute("x1", String(padding.left));
+    line.setAttribute("x2", String(width - padding.right));
+    line.setAttribute("y1", String(gridY));
+    line.setAttribute("y2", String(gridY));
+    line.setAttribute("class", "chart-grid");
+    chart.append(line);
+  }
+  const coordinates = points.map((point, index) => `${x(index)},${y(Number(point.price))}`);
+  const area = document.createElementNS(namespace, "path");
+  area.setAttribute("d", `M ${padding.left},${height - padding.bottom} L ${coordinates.join(" L ")} L ${width - padding.right},${height - padding.bottom} Z`);
+  area.setAttribute("class", "chart-area");
+  chart.append(area);
+  const line = document.createElementNS(namespace, "polyline");
+  line.setAttribute("points", coordinates.join(" "));
+  line.setAttribute("class", "chart-line");
+  chart.append(line);
+  points.forEach((point, index) => {
+    const dot = document.createElementNS(namespace, "circle");
+    dot.setAttribute("cx", String(x(index)));
+    dot.setAttribute("cy", String(y(Number(point.price))));
+    dot.setAttribute("r", "5");
+    dot.setAttribute("class", "chart-dot");
+    const title = document.createElementNS(namespace, "title");
+    title.textContent = `${formatDate(point.observed_at)}: ${money(point.price, point.currency)}`;
+    dot.append(title);
+    chart.append(dot);
+  });
+  const labels = [
+    { x: 2, y: padding.top + 7, text: money(maximum, points[0].currency) },
+    { x: 2, y: height - padding.bottom + 7, text: money(minimum, points[0].currency) },
+    { x: padding.left, y: height - 8, text: formatShortDate(points[0].observed_at) },
+    { x: width - padding.right, y: height - 8, text: formatShortDate(points.at(-1).observed_at), anchor: "end" },
+  ];
+  labels.forEach((label) => {
+    const textNode = document.createElementNS(namespace, "text");
+    textNode.setAttribute("x", String(label.x));
+    textNode.setAttribute("y", String(label.y));
+    textNode.setAttribute("class", "chart-label");
+    if (label.anchor) textNode.setAttribute("text-anchor", label.anchor);
+    textNode.textContent = label.text;
+    chart.append(textNode);
+  });
+}
+
+function formatShortDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? value : date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+async function loadDeliveryStatus() {
+  const payload = await api("/api/delivery-status?limit=12");
+  const delivered = payload.notifications.filter((item) => item.status === "success").length;
+  const failed = payload.notifications.filter((item) => item.status !== "success").length;
+  $("delivery-summary").textContent = `${delivered} delivered${failed ? ` · ${failed} failed` : ""}`;
+  renderEvents("delivery-list", payload.notifications, (item) => ({
+    title: `${readableName(item.provider)} · ${readableName(item.reason)}`,
+    detail: `${item.watch_id === "__health__" ? "System event" : readableName(item.watch_id)} · ${formatDate(item.attempted_at)}`,
+    status: item.status,
+  }), "No notification attempts recorded yet.");
+  renderEvents("failure-list", payload.source_failures, (item) => ({
+    title: readableName(item.category),
+    detail: `${item.watch_id ? readableName(item.watch_id) : "All watches"} · ${formatDate(item.occurred_at)}`,
+    status: "failed",
+  }), "No fare-source issues recorded.");
+}
+
+function renderEvents(targetId, items, describe, emptyText) {
+  const list = $(targetId);
+  list.replaceChildren();
+  if (!items.length) {
+    list.append(element("p", "empty-compact", emptyText));
+    return;
+  }
+  items.slice(0, 5).forEach((item) => {
+    const description = describe(item);
+    const row = element("div", "event-row");
+    row.append(element("strong", "", description.title));
+    row.append(element("span", `event-status ${description.status}`, description.status));
+    row.append(element("small", "", description.detail));
+    list.append(row);
+  });
 }
 
 async function refresh() {
@@ -216,7 +395,7 @@ async function refresh() {
   try {
     const [payload] = await Promise.all([api("/api/state"), loadAirports()]);
     renderState(payload);
-    await loadHistory();
+    await Promise.all([loadHistory(), loadDeliveryStatus()]);
   } catch (error) { toast(error.message); }
   finally { $("refresh-button").disabled = false; }
 }
@@ -430,7 +609,18 @@ function beginJobPolling(jobId) {
 $("refresh-button").addEventListener("click", refresh);
 $("check-all-button").addEventListener("click", () => startCheck());
 $("add-watch-button").addEventListener("click", () => openWatchDialog());
-$("history-watch").addEventListener("change", loadHistory);
+$("history-watch").addEventListener("change", () => {
+  updateRouteFilter();
+  loadHistory();
+});
+$("history-route").addEventListener("change", loadHistory);
+$("history-stops").addEventListener("change", loadHistory);
+$("history-deals").addEventListener("change", loadHistory);
+let airlineTimer;
+$("history-airline").addEventListener("input", () => {
+  window.clearTimeout(airlineTimer);
+  airlineTimer = window.setTimeout(loadHistory, 250);
+});
 $("date-mode").addEventListener("change", (event) => setDateMode(event.target.value));
 $("trip-type").addEventListener("change", () => {
   if ($("trip-type").value === "round_trip" && $("date-mode").value !== "exact") {

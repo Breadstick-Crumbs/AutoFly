@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import time
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -17,7 +17,9 @@ from autofly.config import WatchConfig
 from autofly.dashboard.app import create_app
 from autofly.dashboard.config_store import ConfigStore
 from autofly.dashboard.service import DashboardService
+from autofly.database import Database
 from autofly.errors import ConfigError
+from autofly.models import FareOffer
 from autofly.sources.base import DateCandidate
 
 runner = CliRunner()
@@ -185,6 +187,65 @@ def test_assets_are_served_without_external_dependencies(tmp_path: Path) -> None
     assert styles.status_code == 200
     assert "https://" not in script.text
     assert "@import" not in styles.text
+
+
+def test_results_filters_trends_and_delivery_diagnostics_are_sanitized(tmp_path: Path) -> None:
+    path = config_file(tmp_path)
+    database = Database(tmp_path / "autofly.db")
+    cycle = database.start_cycle()
+    qualifying = FareOffer.model_validate(
+        {
+            "source": "flight_goat",
+            "origin": "COK",
+            "destination": "DXB",
+            "departure_at": "2026-08-10T08:00:00+00:00",
+            "airline": "Example Air",
+            "flight_numbers": ["EX1"],
+            "stops": 0,
+            "layover_minutes": [],
+            "trip_type": "one_way",
+            "cabin": "economy",
+            "passenger_count": 1,
+            "price": "20000",
+            "currency": "INR",
+            "booking_url": "https://example.com/fare",
+            "self_transfer": False,
+            "observed_at": datetime(2026, 8, 7, tzinfo=UTC),
+        }
+    )
+    database.observe(
+        cycle,
+        "cok-dxb",
+        qualifying,
+        qualifies=True,
+        qualification_reason="qualified",
+    )
+    database.record_notification(
+        cycle_id=cycle,
+        watch_id="cok-dxb",
+        itinerary_id=qualifying.itinerary_id,
+        provider="telegram",
+        reason="first_qualified",
+        price=qualifying.price,
+        status="failed",
+        error="sensitive upstream response",
+        idempotency_key="dashboard-test",
+    )
+    database.record_failure(cycle, "flight_goat", "parse", "sensitive source output", "cok-dxb")
+    database.close()
+    client = TestClient(create_app(path))
+
+    history = client.get("/api/history?watch_id=cok-dxb&qualifying=true&origin=cok")
+    trend = client.get("/api/trend?watch_id=cok-dxb&origin=COK&destination=DXB")
+    delivery = client.get("/api/delivery-status")
+
+    assert history.status_code == 200
+    assert history.json()[0]["qualifies"] is True
+    assert trend.json()[0]["price"] == 20000.0
+    assert delivery.json()["notifications"][0]["error"] == (
+        "Delivery failed; check the service logs."
+    )
+    assert "sensitive" not in delivery.text
 
 
 class EmptyFareSource:

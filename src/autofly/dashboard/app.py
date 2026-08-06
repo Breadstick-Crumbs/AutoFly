@@ -92,8 +92,36 @@ def create_app(config_path: Path, *, password: str | None = None) -> FastAPI:
     def history_payload(
         watch_id: str | None = None,
         limit: int = Query(default=50, ge=1, le=200),
+        qualifying: bool | None = None,
+        origin: str | None = Query(default=None, min_length=3, max_length=3),
+        destination: str | None = Query(default=None, min_length=3, max_length=3),
+        max_stops: int | None = Query(default=None, ge=0, le=3),
+        airline: str | None = Query(default=None, max_length=80),
     ) -> list[dict[str, object]]:
-        return dashboard.history(watch_id, limit)
+        return dashboard.history(
+            watch_id,
+            limit,
+            qualifying=qualifying,
+            origin=origin.upper() if origin else None,
+            destination=destination.upper() if destination else None,
+            max_stops=max_stops,
+            airline=airline,
+        )
+
+    @router.get("/api/trend")
+    def trend_payload(
+        watch_id: str,
+        origin: str = Query(min_length=3, max_length=3),
+        destination: str = Query(min_length=3, max_length=3),
+        limit: int = Query(default=40, ge=2, le=100),
+    ) -> list[dict[str, object]]:
+        return dashboard.trend(watch_id, origin.upper(), destination.upper(), limit)
+
+    @router.get("/api/delivery-status")
+    def delivery_payload(
+        limit: int = Query(default=20, ge=1, le=100),
+    ) -> dict[str, list[dict[str, object]]]:
+        return dashboard.delivery_status(limit)
 
     mutation_dependencies = [Depends(require_mutation_guard)]
 
