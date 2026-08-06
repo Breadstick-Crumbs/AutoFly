@@ -44,4 +44,4 @@ This file is intentionally short and is updated as milestones complete.
 - [x] Surface notification delivery and sanitized source-failure status.
 - [x] Keep pre-migration observations explicitly marked as not evaluated.
 - [x] Add manual CI dispatch and explicit all-branch push triggers.
-- [ ] Complete migration, browser, package, CI, release, and live deployment validation.
+- [x] Complete migration, browser, package, CI, release, and live deployment validation.
