@@ -73,7 +73,7 @@ Fare sources implement `FareSource.search(SearchRequest) -> list[FareOffer]`; re
 
 Flight GOAT accepts three-character identifiers passed to Google Flights. Airport codes including `COK`, `DXB`, `LHR`, and `JFK` were verified through upstream fixtures or the v0.1 live check. Metropolitan codes such as `LON` and `NYC` are syntactically accepted by AutoFly but are **not claimed as verified** by this release; test them with `autofly check --watch ID --dry-run`, then a low-volume live check. Descriptive city names are not accepted.
 
-Flexible round trips are deliberately rejected because pairing departure and return dates can create an uncontrolled Cartesian search. v0.1 supports exact round trips only. There is no currency conversion: source and watch currencies must match. Baggage is reported as “verify before booking” unless explicitly supplied by a future source. The Playwright adapter is opt-in and stops at CAPTCHA/bot verification; it does not evade controls.
+Flexible round trips are deliberately rejected because pairing departure and return dates can create an uncontrolled Cartesian search. v0.1 supports exact round-trip fare searches, verified live against Flight GOAT; its results identify the outbound selection and total search price while the exact return date remains search-level data, not a fully selected inbound itinerary. There is no currency conversion: source and watch currencies must match. Baggage is reported as “verify before booking” unless explicitly supplied by a future source. The Playwright adapter is opt-in and stops at CAPTCHA/bot verification; it does not evade controls.
 
 ## Privacy and security
 
@@ -86,4 +86,3 @@ This is the initial `0.1.0` alpha. AutoFly uses Apache-2.0 because its explicit 
 The primary adapter invokes [Flight GOAT](https://printingpress.dev/library/travel/flight-goat), created by Matt Van Horn and contributors as part of the [Printing Press Library](https://github.com/mvanhorn/printing-press-library). The tested release is `2026.8.1`, source commit `854c0465aaa9c275485338c2be7ef0bcaddc4e89`, licensed Apache-2.0. AutoFly does not copy or redistribute its source.
 
 AutoFly is not affiliated with or endorsed by Google, Google Flights, any airline, Flight GOAT, Printing Press, or their contributors. Fare data may be delayed, incomplete, or wrong. Use search links at your own discretion and comply with applicable terms and laws.
-

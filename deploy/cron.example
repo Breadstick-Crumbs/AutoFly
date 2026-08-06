@@ -1,0 +1,3 @@
+# Run as the dedicated autofly user. flock is an extra guard; AutoFly also owns a process lock.
+17 */6 * * * . /etc/autofly/autofly.env && /usr/bin/flock -n /var/lib/autofly/cron.lock /opt/autofly/.venv/bin/autofly check --all >>/var/log/autofly.log 2>&1
+

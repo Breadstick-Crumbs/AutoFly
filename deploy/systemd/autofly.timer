@@ -1,0 +1,12 @@
+[Unit]
+Description=Run AutoFly every six hours
+
+[Timer]
+OnCalendar=*-*-* 00/6:00:00
+RandomizedDelaySec=10m
+Persistent=true
+Unit=autofly.service
+
+[Install]
+WantedBy=timers.target
+

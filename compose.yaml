@@ -1,0 +1,26 @@
+services:
+  autofly:
+    build:
+      context: .
+      args:
+        FLIGHT_GOAT_COMMIT: 854c0465aaa9c275485338c2be7ef0bcaddc4e89
+    image: autofly:0.1.0
+    restart: "no"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./config.yaml:/etc/autofly/config.yaml:ro
+      - autofly-data:/var/lib/autofly
+    command: ["check", "--all"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+volumes:
+  autofly-data:
+
