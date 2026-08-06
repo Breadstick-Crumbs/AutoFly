@@ -4,6 +4,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 
 ## [Unreleased]
 
+### Fixed
+
+- Suppress HTTP transport request logging so token-bearing Telegram API URLs are never emitted.
+
 ## [0.1.0] - 2026-08-06
 
 ### Added
@@ -14,4 +18,3 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 - Telegram and generic JSON webhooks, health alerts, CLI, process lock, and structured logs.
 - Opt-in conservative Playwright exact-search fallback.
 - Docker, systemd, cron, CI, security, deployment, and contributor documentation.
-
