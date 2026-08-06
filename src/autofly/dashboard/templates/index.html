@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
-    <title>AutoFly Control Room</title>
+    <title>AutoFly · Your flight alerts</title>
     <link rel="stylesheet" href="/assets/styles.css">
     <script src="/assets/app.js" defer></script>
   </head>
@@ -13,12 +13,13 @@
       <aside class="sidebar">
         <a class="brand" href="#overview" aria-label="AutoFly home">
           <span class="brand-mark" aria-hidden="true">A</span>
-          <span><strong>AutoFly</strong><small>Control room</small></span>
+          <span><strong>AutoFly</strong><small>Flight alerts</small></span>
         </a>
         <nav aria-label="Dashboard sections">
-          <a class="nav-link active" href="#overview">Overview</a>
-          <a class="nav-link" href="#watches">Watches</a>
-          <a class="nav-link" href="#history">Fare history</a>
+          <a class="nav-link active" href="#overview">Dashboard</a>
+          <a class="nav-link" href="#watches">My watches</a>
+          <a class="nav-link" href="#history">Fare results</a>
+          <a class="nav-link" href="#activity">Activity</a>
         </nav>
         <div class="privacy-note">
           <span class="privacy-dot"></span>
@@ -29,11 +30,11 @@
       <main>
         <header class="topbar">
           <div>
-            <p class="eyebrow">Self-hosted fare intelligence</p>
-            <h1>Flight watch control room</h1>
+            <p class="eyebrow">Private, self-hosted monitoring</p>
+            <h1>Your flight alerts</h1>
           </div>
           <div class="topbar-actions">
-            <span id="source-status" class="status-pill neutral">Checking source…</span>
+            <span id="source-status" class="status-pill neutral">Checking fare search…</span>
             <button id="refresh-button" class="button ghost" type="button">Refresh</button>
           </div>
         </header>
@@ -41,53 +42,67 @@
         <section id="overview" class="section hero-grid" aria-labelledby="overview-title">
           <article class="hero-card">
             <div>
-              <p class="eyebrow">Monitoring status</p>
-              <h2 id="overview-title">Your routes, quietly watched.</h2>
-              <p id="hero-copy" class="hero-copy">Loading your self-hosted monitor…</p>
+              <p class="eyebrow">Automatic monitoring</p>
+              <h2 id="overview-title">We’ll watch the fares. You choose the flight.</h2>
+              <p id="hero-copy" class="hero-copy">Loading your flight watches…</p>
             </div>
             <div class="hero-actions">
-              <button id="check-all-button" class="button primary" type="button">Check all now</button>
+              <button id="check-all-button" class="button primary" type="button">Search for fares now</button>
               <span id="check-feedback" class="muted" role="status"></span>
             </div>
           </article>
           <article class="schedule-card">
-            <p class="eyebrow">Next cadence</p>
+            <p class="eyebrow">Automatic schedule</p>
             <strong id="schedule-value">—</strong>
             <span id="schedule-detail">Loading schedule…</span>
           </article>
         </section>
 
         <section class="stats-grid" aria-label="Monitoring statistics">
-          <article><span>Active watches</span><strong id="stat-watches">—</strong><small id="stat-routes">— routes</small></article>
-          <article><span>Available fares</span><strong id="stat-fares">—</strong><small>latest observations</small></article>
-          <article><span>Alerts delivered</span><strong id="stat-alerts">—</strong><small>successful notifications</small></article>
-          <article><span>System health</span><strong id="stat-health">—</strong><small id="stat-health-detail">No cycle data</small></article>
+          <article><span>Watches running</span><strong id="stat-watches">—</strong><small id="stat-routes">— routes</small></article>
+          <article><span>Itineraries tracked</span><strong id="stat-fares">—</strong><small>fares seen recently</small></article>
+          <article><span>Deal alerts sent</span><strong id="stat-alerts">—</strong><small>successful notifications</small></article>
+          <article><span>Monitor health</span><strong id="stat-health">—</strong><small id="stat-health-detail">No search history yet</small></article>
         </section>
+
+        <details class="section guide-panel" open>
+          <summary><span><span class="eyebrow">New here?</span><strong>How AutoFly works</strong></span><span class="summary-action"><span class="when-open">Hide guide</span><span class="when-closed">Show guide</span></span></summary>
+          <div class="guide-grid">
+            <article><span class="step-number">1</span><div><strong>Describe the trip</strong><p>Add airports, travel dates, and the most you want to pay.</p></div></article>
+            <article><span class="step-number">2</span><div><strong>AutoFly checks quietly</strong><p>Your server searches on the schedule above. You can also search now.</p></div></article>
+            <article><span class="step-number">3</span><div><strong>Open a matching fare</strong><p>When every rule passes, AutoFly sends the link to your enabled notifier.</p></div></article>
+          </div>
+          <div class="readiness" aria-label="Setup readiness">
+            <span id="guide-watch" class="readiness-item">○ Add a watch</span>
+            <span id="guide-source" class="readiness-item">○ Connect fare search</span>
+            <span id="guide-notifier" class="readiness-item">○ Enable notifications</span>
+          </div>
+        </details>
 
         <section id="watches" class="section panel" aria-labelledby="watches-title">
           <div class="section-heading">
-            <div><p class="eyebrow">Rules</p><h2 id="watches-title">Flight watches</h2></div>
-            <button id="add-watch-button" class="button secondary" type="button">New watch</button>
+            <div><p class="eyebrow">Your alert rules</p><h2 id="watches-title">My flight watches</h2><p class="section-copy">Each watch is independent. Pause one without affecting the others.</p></div>
+            <button id="add-watch-button" class="button secondary" type="button">Add a flight watch</button>
           </div>
           <div id="watch-list" class="watch-grid" aria-live="polite"></div>
         </section>
 
         <section id="history" class="section panel" aria-labelledby="history-title">
           <div class="section-heading">
-            <div><p class="eyebrow">Observed fares</p><h2 id="history-title">Recent history</h2></div>
-            <select id="history-watch" aria-label="Filter history by watch"><option value="">All watches</option></select>
+            <div><p class="eyebrow">What AutoFly found</p><h2 id="history-title">Recent fare results</h2><p class="section-copy">These are observed prices, not necessarily deals. Your watch rules decide when to alert you.</p></div>
+            <select id="history-watch" aria-label="Filter results by watch"><option value="">All watches</option></select>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Observed</th><th>Route</th><th>Departure</th><th>Airline</th><th>Stops</th><th>Price</th><th></th></tr></thead>
+              <thead><tr><th>Found</th><th>Route</th><th>Departure</th><th>Airline</th><th>Stops</th><th>Price</th><th></th></tr></thead>
               <tbody id="history-body"></tbody>
             </table>
-            <p id="history-empty" class="empty-state" hidden>No fares have been observed yet.</p>
+            <p id="history-empty" class="empty-state" hidden>No fares recorded yet. Run a fare search or wait for the next automatic check.</p>
           </div>
         </section>
 
-        <section class="section panel cycles-panel" aria-labelledby="cycles-title">
-          <div class="section-heading"><div><p class="eyebrow">Operations</p><h2 id="cycles-title">Recent cycles</h2></div></div>
+        <section id="activity" class="section panel cycles-panel" aria-labelledby="cycles-title">
+          <div class="section-heading"><div><p class="eyebrow">Search log</p><h2 id="cycles-title">Recent activity</h2><p class="section-copy">A cycle is one scheduled or manually started fare search.</p></div></div>
           <div id="cycle-list" class="cycle-list"></div>
         </section>
       </main>
@@ -96,44 +111,64 @@
     <dialog id="watch-dialog">
       <form id="watch-form" method="dialog">
         <div class="dialog-heading">
-          <div><p class="eyebrow">Watch editor</p><h2 id="dialog-title">New flight watch</h2></div>
+          <div><p class="eyebrow">Guided watch setup</p><h2 id="dialog-title">New flight watch</h2><p>Tell AutoFly what a good fare looks like. Nothing is booked automatically.</p></div>
           <button class="icon-button" value="cancel" aria-label="Close">×</button>
         </div>
         <input id="original-id" type="hidden">
-        <div class="form-grid">
-          <label>Watch ID<input id="watch-id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="kerala-to-uae"></label>
-          <label class="checkbox-field"><input id="watch-enabled" type="checkbox" checked><span>Watch enabled</span></label>
-          <label>Origins<span class="airport-input"><input id="origins" required autocomplete="off" placeholder="COK, CCJ, TRV"><span id="origins-suggestions" class="airport-suggestions"></span></span></label>
-          <label>Destinations<span class="airport-input"><input id="destinations" required autocomplete="off" placeholder="DXB, SHJ, AUH"><span id="destinations-suggestions" class="airport-suggestions"></span></span></label>
-          <label>Trip type<select id="trip-type"><option value="one_way">One way</option><option value="round_trip">Round trip (exact only)</option></select></label>
-          <label>Cabin<select id="cabin"><option value="economy">Economy</option><option value="premium_economy">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></label>
-          <label>Adults<input id="adults" type="number" min="1" max="9" value="1" required></label>
-          <label>Date mode<select id="date-mode"><option value="range">Date range</option><option value="exact">Exact date</option><option value="rolling">Rolling window</option></select></label>
-        </div>
-        <div id="dates-exact" class="form-grid date-fields" hidden>
-          <label>Departure<input id="exact-departure" type="date"></label>
-          <label id="return-field">Return<input id="exact-return" type="date"></label>
-        </div>
-        <div id="dates-range" class="form-grid date-fields">
-          <label>First departure<input id="range-start" type="date"></label>
-          <label>Last departure<input id="range-end" type="date"></label>
-        </div>
-        <div id="dates-rolling" class="form-grid date-fields" hidden>
-          <label>Start days from now<input id="rolling-start" type="number" min="0" max="730" value="1"></label>
-          <label>End days from now<input id="rolling-end" type="number" min="0" max="730" value="30"></label>
-        </div>
-        <div class="form-grid divider-top">
-          <label>Currency<input id="currency" required maxlength="3" value="USD" placeholder="USD"></label>
-          <label>Maximum price<input id="maximum-price" required type="number" min="0.01" step="0.01"></label>
-          <label>Maximum stops<select id="max-stops"><option value="0">Direct only</option><option value="1" selected>Up to 1 stop</option><option value="2">Up to 2 stops</option><option value="3">Up to 3 stops</option><option value="">Any</option></select></label>
-          <label>Maximum layover hours<input id="max-layover" type="number" min="0" max="72" step="0.5" placeholder="Optional"></label>
-          <label class="checkbox-field"><input id="self-transfer" type="checkbox"><span>Allow self-transfers</span></label>
-          <label>Alert cooldown hours<input id="cooldown" type="number" min="0" step="1" value="24"></label>
-        </div>
+
+        <fieldset class="editor-section">
+          <legend><span>1</span> Where do you want to fly?</legend>
+          <div class="form-grid">
+            <label>Watch name<input id="watch-id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="kerala-to-uae"><small>Lowercase letters, numbers, hyphens, or underscores.</small></label>
+            <label class="checkbox-field"><input id="watch-enabled" type="checkbox" checked><span>Start monitoring after I save</span></label>
+            <label>Flying from<span class="airport-input"><input id="origins" required autocomplete="off" placeholder="COK, CCJ, TRV"><span id="origins-suggestions" class="airport-suggestions"></span></span><small>One or more 3-letter airport codes, separated by commas.</small></label>
+            <label>Flying to<span class="airport-input"><input id="destinations" required autocomplete="off" placeholder="DXB, SHJ, AUH"><span id="destinations-suggestions" class="airport-suggestions"></span></span><small>Every origin is checked against every destination.</small></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="editor-section">
+          <legend><span>2</span> When and how are you travelling?</legend>
+          <div class="form-grid">
+            <label>Trip type<select id="trip-type"><option value="one_way">One way</option><option value="round_trip">Round trip (exact dates only)</option></select></label>
+            <label>Cabin<select id="cabin"><option value="economy">Economy</option><option value="premium_economy">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></label>
+            <label>Travellers (adults)<input id="adults" type="number" min="1" max="9" value="1" required></label>
+            <label>Date flexibility<select id="date-mode"><option value="range">Between two dates</option><option value="exact">One exact date</option><option value="rolling">Always look ahead</option></select><small>“Always look ahead” moves forward automatically each day.</small></label>
+          </div>
+          <div id="dates-exact" class="form-grid date-fields" hidden>
+            <label>Departure<input id="exact-departure" type="date"></label>
+            <label id="return-field">Return<input id="exact-return" type="date"></label>
+          </div>
+          <div id="dates-range" class="form-grid date-fields">
+            <label>Earliest departure<input id="range-start" type="date"></label>
+            <label>Latest departure<input id="range-end" type="date"></label>
+          </div>
+          <div id="dates-rolling" class="form-grid date-fields" hidden>
+            <label>Start looking in<input id="rolling-start" type="number" min="0" max="730" value="1"><small>Days from today.</small></label>
+            <label>Look ahead until day<input id="rolling-end" type="number" min="0" max="730" value="30"><small>The last day in the moving window.</small></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="editor-section">
+          <legend><span>3</span> What counts as a deal?</legend>
+          <div class="form-grid">
+            <label>Currency<input id="currency" required maxlength="3" value="USD" placeholder="USD"></label>
+            <label>Alert me below<input id="maximum-price" required type="number" min="0.01" step="0.01" placeholder="25000"><small>The fare must be strictly below this amount.</small></label>
+            <label>Maximum stops<select id="max-stops"><option value="0">Direct only</option><option value="1" selected>Up to 1 stop</option><option value="2">Up to 2 stops</option><option value="3">Up to 3 stops</option><option value="">Any number of stops</option></select></label>
+            <label>Maximum layover<input id="max-layover" type="number" min="0" max="72" step="0.5" placeholder="Optional"><small>Hours; leave blank for no layover limit.</small></label>
+            <label class="checkbox-field"><input id="self-transfer" type="checkbox"><span>Allow self-transfers <small>You may need to collect and re-check baggage.</small></span></label>
+            <label>Repeat-alert wait<input id="cooldown" type="number" min="0" step="1" value="24"><small>Hours before a reappearing deal can alert again.</small></label>
+          </div>
+        </fieldset>
+
+        <aside id="watch-preview" class="watch-preview" aria-live="polite">
+          <span class="eyebrow">Your rule at a glance</span>
+          <strong id="preview-route">Add origin and destination airports</strong>
+          <p id="preview-rule">Complete the fields above to preview this alert.</p>
+        </aside>
         <p id="form-error" class="form-error" role="alert"></p>
         <div class="dialog-actions">
           <button class="button ghost" value="cancel" type="button" id="cancel-watch">Cancel</button>
-          <button class="button primary" type="submit">Save watch</button>
+          <button class="button primary" type="submit">Save flight watch</button>
         </div>
       </form>
     </dialog>

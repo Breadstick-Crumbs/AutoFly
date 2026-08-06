@@ -27,3 +27,12 @@ This file is intentionally short and is updated as milestones complete.
 - [x] Add a loopback-only Compose profile and secure remote-access guidance.
 - [x] Complete final browser, Docker, package, and full-suite validation.
 - [x] Push the reviewed feature branch for merge into `main`.
+
+## v0.2 phase 3: dashboard usability
+
+- [x] Replace operator jargon with plain-language monitoring and fare explanations.
+- [x] Add a concise onboarding guide and live setup-readiness indicators.
+- [x] Group watch creation into route, travel, and deal sections with field guidance.
+- [x] Add a live watch-rule preview and clearer validation messages.
+- [x] Clarify watch states, actions, fare results, and search activity.
+- [x] Complete browser, accessibility, responsive, and regression validation; release and deploy.

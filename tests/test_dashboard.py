@@ -75,7 +75,9 @@ def test_dashboard_state_is_sanitized_and_sets_security_headers(
     response = client.get("/api/state")
 
     assert page.status_code == 200
-    assert "Flight watch control room" in page.text
+    assert "Your flight alerts" in page.text
+    assert "How AutoFly works" in page.text
+    assert "Nothing is booked automatically" in page.text
     assert response.status_code == 200
     assert response.json()["watches"][0]["id"] == "cok-dxb"
     assert "never-return-this-value" not in response.text

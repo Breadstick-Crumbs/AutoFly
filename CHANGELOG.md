@@ -4,6 +4,15 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 
 ## [Unreleased]
 
+### Added
+
+- Plain-language dashboard onboarding, setup-readiness indicators, and a live watch-rule preview.
+
+### Changed
+
+- Group the watch editor into guided route, travel, and deal sections with clearer field help.
+- Clarify monitoring status, watch actions, fare-result labels, and search activity for new users.
+
 ## [0.2.0] - 2026-08-07
 
 ### Added
