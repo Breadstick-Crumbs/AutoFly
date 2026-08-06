@@ -31,6 +31,7 @@ class FareOffer(BaseModel):
     origin: str
     destination: str
     departure_at: datetime
+    return_date: date | None = None
     return_at: datetime | None = None
     airline: str | None = None
     flight_numbers: list[str] = Field(default_factory=list)
@@ -61,6 +62,7 @@ class FareOffer(BaseModel):
             "origin": self.origin,
             "destination": self.destination,
             "departure_at": self.departure_at.isoformat(),
+            "return_date": self.return_date.isoformat() if self.return_date else None,
             "return_at": self.return_at.isoformat() if self.return_at else None,
             "flight_numbers": self.flight_numbers,
             "trip_type": self.trip_type,

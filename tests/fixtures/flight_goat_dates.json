@@ -1,0 +1,10 @@
+{
+  "origin": "COK",
+  "destination": "DXB",
+  "count": 3,
+  "dates": [
+    {"departure_date": "2026-09-17", "price": 17224, "currency": "INR"},
+    {"departure_date": "2026-09-15", "price": 17696, "currency": "INR"},
+    {"departure_date": "2026-09-16", "price": 17696, "currency": "INR"}
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "success": true,
+  "source": "native-go",
+  "data_source": "google_flights",
+  "search_type": "flights",
+  "trip_type": "ONE_WAY",
+  "query": {"origin": "COK", "destination": "DXB", "departure_date": "2026-09-15", "currency": "INR"},
+  "count": 2,
+  "flights": [
+    {
+      "duration": 250,
+      "stops": 0,
+      "legs": [{
+        "departure_airport": {"code": "COK", "name": "Cochin International Airport"},
+        "arrival_airport": {"code": "DXB", "name": "Dubai International Airport"},
+        "departure_time": "2026-09-15T08:55:00",
+        "arrival_time": "2026-09-15T11:35:00",
+        "duration": 250,
+        "airline": {"code": "IX", "name": "Air India Express"},
+        "flight_number": "425"
+      }],
+      "price": 22541,
+      "currency": "INR",
+      "booking_urls": {"primary": "https://www.google.com/travel/flights/search?sanitized=1", "primary_kind": "search"}
+    },
+    {
+      "duration": 855,
+      "stops": 1,
+      "legs": [
+        {"departure_airport": {"code": "COK"}, "arrival_airport": {"code": "BLR"}, "departure_time": "2026-09-15T21:40:00", "arrival_time": "2026-09-15T22:50:00", "duration": 70, "airline": {"code": "6E", "name": "IndiGo"}, "flight_number": "472"},
+        {"departure_airport": {"code": "BLR"}, "arrival_airport": {"code": "DXB"}, "departure_time": "2026-09-16T08:10:00", "arrival_time": "2026-09-16T10:25:00", "duration": 225, "airline": {"code": "6E", "name": "IndiGo"}, "flight_number": "1485"}
+      ],
+      "price": 17696,
+      "currency": "INR",
+      "booking_urls": {"google_url": "https://www.google.com/travel/flights/search?sanitized=2"}
+    }
+  ]
+}
+
