@@ -1,0 +1,80 @@
+version: 1
+
+database:
+  path: ./data/autofly.db
+  busy_timeout_seconds: 10
+
+scheduler:
+  interval_hours: 6
+  jitter_minutes: 10
+  timezone: Asia/Kolkata
+  max_queries_per_cycle: 100
+  lock_path: ./data/autofly.lock
+
+sources:
+  flight_goat:
+    enabled: true
+    command: flight-goat-pp-cli
+    pace_seconds: 5
+    timeout_seconds: 90
+    max_output_bytes: 5000000
+    expected_version: "2026.8.1"
+    max_retries: 2
+  playwright:
+    enabled: false
+    headless: true
+    profile_path: ./data/browser-profile
+    locale: en-US
+    currency: USD
+    diagnostic_path: ./diagnostics
+
+notifications:
+  telegram:
+    enabled: true
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    chat_id_env: TELEGRAM_CHAT_ID
+  webhook:
+    enabled: false
+    url_env: AUTOFLY_WEBHOOK_URL
+    allow_private_networks: false
+
+watches:
+  - id: kerala-to-uae
+    enabled: true
+    origins: [COK, CCJ, TRV, CNN]
+    destinations: [DXB, SHJ, AUH, RKT]
+    trip:
+      type: one_way
+      adults: 1
+      cabin: economy
+    dates:
+      mode: rolling
+      days_from_now: 1
+      days_to: 45
+    deal:
+      currency: INR
+      maximum_price: 25000
+      max_stops: 1
+      max_layover_hours: 8
+      allow_self_transfer: false
+    notifications:
+      cooldown_hours: 24
+      alert_on_price_drop: {amount: 1000, percentage: 5}
+
+  - id: london-to-new-york
+    enabled: false
+    origins: [LHR, LGW]
+    destinations: [JFK, EWR]
+    trip:
+      type: round_trip
+      adults: 1
+      cabin: economy
+    dates:
+      mode: exact
+      departure: 2026-12-10
+      return: 2026-12-20
+    deal:
+      currency: GBP
+      maximum_price: 450
+      max_stops: 1
+
