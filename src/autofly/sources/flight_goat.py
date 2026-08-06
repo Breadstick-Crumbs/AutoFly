@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import tempfile
 import time
@@ -246,6 +247,12 @@ def _stops_flag(max_stops: int) -> str:
 
 def _safe_error(stderr: bytes) -> str:
     text = stderr[:1000].decode("utf-8", errors="replace")
-    # Do not echo command lines, headers, cookies, URLs with query strings, or token-like values.
+    text = re.sub(r"(?i)bearer\s+\S+", "Bearer [REDACTED]", text)
+    text = re.sub(
+        r"(?i)(token|api[_-]?key|cookie|authorization)\s*[:=]\s*\S+",
+        r"\1=[REDACTED]",
+        text,
+    )
+    text = re.sub(r"(https?://[^\s?]+)\?\S+", r"\1?[REDACTED]", text)
     cleaned = " ".join(line for line in text.splitlines() if "authorization" not in line.lower())
     return cleaned.replace("\r", " ").replace("\n", " ") or "no diagnostic output"

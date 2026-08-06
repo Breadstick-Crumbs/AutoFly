@@ -288,7 +288,7 @@ class WatchEngine:
                     price=offer.price,
                     status="failed",
                     idempotency_key=key,
-                    error=str(exc)[:500],
+                    error=f"{type(exc).__name__}: delivery failed",
                 )
             else:
                 self.db.record_notification(
@@ -319,7 +319,7 @@ class WatchEngine:
                     price=None,
                     status="failed",
                     idempotency_key=key,
-                    error=str(exc)[:500],
+                    error=f"{type(exc).__name__}: delivery failed",
                 )
             else:
                 self.db.record_notification(

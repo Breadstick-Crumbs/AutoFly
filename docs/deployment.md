@@ -13,12 +13,12 @@ sudo install -d -o autofly -g autofly -m 0700 /var/lib/autofly
 sudo git clone https://github.com/Breadstick-Crumbs/AutoFly.git /opt/autofly
 sudo python3.12 -m venv /opt/autofly/.venv
 sudo /opt/autofly/.venv/bin/pip install /opt/autofly
-sudo -u autofly npx -y @mvanhorn/printing-press-library@0.1.19 install flight-goat --cli-only
+sudo -H -u autofly npx -y @mvanhorn/printing-press-library@0.1.19 install flight-goat --cli-only
 sudo cp /opt/autofly/config.example.yaml /etc/autofly/config.yaml
 sudo cp /opt/autofly/.env.example /etc/autofly/autofly.env
 sudo chown root:autofly /etc/autofly/config.yaml /etc/autofly/autofly.env
 sudo chmod 0640 /etc/autofly/config.yaml
-sudo chmod 0600 /etc/autofly/autofly.env
+sudo chmod 0640 /etc/autofly/autofly.env
 ```
 
 The npm installer requires Node 20+. If the distribution Node is older, install a maintained Node 20/22 package first. Ensure `flight-goat-pp-cli` is on the service user's `PATH`, or set its absolute path in YAML. Edit configuration paths to `/var/lib/autofly/autofly.db` and `/var/lib/autofly/autofly.lock`, add real secrets, then:
@@ -80,4 +80,3 @@ sudo systemctl start autofly.timer
 ```
 
 Before upgrading, stop the timer and back up `/var/lib/autofly` plus `/etc/autofly`. Roll back by checking out the previous reviewed tag/commit, reinstalling it, restoring the matching database backup only if its schema is newer than the old app supports, running doctor, and restarting the timer. Never downgrade a database in place.
-

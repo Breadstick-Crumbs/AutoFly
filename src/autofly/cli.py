@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import shutil
+import uuid
 from importlib.resources import files
 from pathlib import Path
 from typing import Annotated, Any
@@ -257,9 +258,46 @@ def notify_test(
         notifiers = _notifiers(loaded)
         if not notifiers:
             raise ConfigError("No notification providers are enabled")
+        db = _database(loaded)
+        cycle_id = db.start_cycle()
         notification = Notification(event="health_recovered", reason="AutoFly test notification")
+        failures: list[str] = []
         for notifier in notifiers:
-            notifier.send(notification, "autofly-notification-test")
+            key = f"autofly-notification-test-{uuid.uuid4()}"
+            try:
+                notifier.send(notification, key)
+            except Exception as exc:
+                failures.append(notifier.name)
+                db.record_notification(
+                    cycle_id=cycle_id,
+                    watch_id="__health__",
+                    itinerary_id=None,
+                    provider=notifier.name,
+                    reason="manual_test",
+                    price=None,
+                    status="failed",
+                    idempotency_key=key,
+                    error=f"{type(exc).__name__}: delivery failed",
+                )
+            else:
+                db.record_notification(
+                    cycle_id=cycle_id,
+                    watch_id="__health__",
+                    itinerary_id=None,
+                    provider=notifier.name,
+                    reason="manual_test",
+                    price=None,
+                    status="success",
+                    idempotency_key=key,
+                )
+        db.finish_cycle(
+            cycle_id,
+            "failed" if failures else "success",
+            {"notification_test": True, "failed_providers": failures},
+        )
+        db.close()
+        if failures:
+            raise ConfigError(f"Notification test failed for: {', '.join(failures)}")
     except AutoFlyError as exc:
         _abort(exc, 5)
     typer.echo(f"Sent test notification through {len(notifiers)} provider(s)")

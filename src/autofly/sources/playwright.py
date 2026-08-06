@@ -71,7 +71,13 @@ class PlaywrightSource:
                     if "json" not in content_type or "flight" not in response.url.lower():
                         return
                     try:
-                        payload = response.json()
+                        declared_size = int(response.headers.get("content-length", "0") or 0)
+                        if declared_size > self.config.max_response_bytes:
+                            return
+                        body = response.body()
+                        if len(body) > self.config.max_response_bytes:
+                            return
+                        payload = json.loads(body)
                     except Exception:
                         return
                     if isinstance(payload, dict) and isinstance(payload.get("flights"), list):
@@ -136,17 +142,18 @@ class PlaywrightSource:
             main = page.get_by_role("main")
             if main.count():
                 main.first.screenshot(path=str(screenshot))
-        metadata.write_text(
-            json.dumps(
-                {
-                    "category": safe_category,
-                    "timestamp": stamp,
-                    "note": "URL, cookies, headers, HTML, and browser profile were not captured",
-                },
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        with suppress(Exception):
+            metadata.write_text(
+                json.dumps(
+                    {
+                        "category": safe_category,
+                        "timestamp": stamp,
+                        "note": "URL, cookies, headers, HTML, and profile were not captured",
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
 
 
 def contains_captcha(text: str) -> bool:

@@ -65,6 +65,7 @@ class PlaywrightConfig(BaseModel):
     currency: str = "USD"
     diagnostic_path: Path = Path("./diagnostics")
     timeout_seconds: float = Field(default=45, ge=5, le=180)
+    max_response_bytes: int = Field(default=5_000_000, ge=1024, le=50_000_000)
 
 
 class SourcesConfig(BaseModel):

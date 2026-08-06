@@ -11,6 +11,7 @@ WorkingDirectory=/opt/autofly
 Environment=AUTOFLY_CONFIG=/etc/autofly/config.yaml
 Environment=AUTOFLY_DATABASE_PATH=/var/lib/autofly/autofly.db
 Environment=AUTOFLY_LOCK_PATH=/var/lib/autofly/autofly.lock
+Environment=PATH=/opt/autofly/.venv/bin:/var/lib/autofly/.local/bin:/usr/local/bin:/usr/bin
 EnvironmentFile=-/etc/autofly/autofly.env
 ExecStart=/opt/autofly/.venv/bin/autofly check --all
 NoNewPrivileges=true
@@ -19,4 +20,3 @@ ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/lib/autofly
 UMask=0077
-
