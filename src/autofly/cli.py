@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import shutil
+import time
 import uuid
 from importlib.resources import files
 from pathlib import Path
@@ -21,6 +22,13 @@ from autofly.logging import configure_logging
 from autofly.notifications.base import Notification, NotificationProvider
 from autofly.notifications.telegram import TelegramNotifier
 from autofly.notifications.webhook import WebhookNotifier
+from autofly.scheduler import next_delay_seconds
+from autofly.setup import (
+    build_setup_config,
+    parse_iata_list,
+    parse_iso_date,
+    write_setup_files,
+)
 from autofly.sources.flight_goat import FlightGoatSource
 from autofly.sources.playwright import PlaywrightSource
 
@@ -85,6 +93,82 @@ def init_command(
     template = files("autofly").joinpath("templates/config.yaml").read_text(encoding="utf-8")
     path.write_text(template, encoding="utf-8")
     typer.echo(f"Created {path}. Edit it, then run: autofly config validate --config {path}")
+
+
+@app.command("setup")
+def setup_command(
+    config_path: Annotated[
+        Path, typer.Option("--config", help="Configuration file to create.")
+    ] = Path("config.yaml"),
+    env_path: Annotated[Path, typer.Option("--env-file", help="Secret environment file.")] = Path(
+        ".env"
+    ),
+    docker: Annotated[
+        bool, typer.Option("--docker", help="Generate paths for Docker Compose.")
+    ] = False,
+) -> None:
+    """Interactively create a validated first watch and environment file."""
+    existing = [str(path) for path in (config_path, env_path) if path.exists()]
+    if existing:
+        _abort(ConfigError(f"Refusing to overwrite existing file(s): {', '.join(existing)}"))
+    try:
+        origins = parse_iata_list(typer.prompt("Origin IATA code(s), comma separated"), "origins")
+        destinations = parse_iata_list(
+            typer.prompt("Destination IATA code(s), comma separated"), "destinations"
+        )
+        date_mode = typer.prompt("Date mode", default="range").strip().lower()
+        if date_mode == "exact":
+            date_values: dict[str, Any] = {
+                "departure": parse_iso_date(
+                    typer.prompt("Departure date (YYYY-MM-DD)"), "departure"
+                )
+            }
+        elif date_mode == "range":
+            date_values = {
+                "departure_start": parse_iso_date(
+                    typer.prompt("First departure date (YYYY-MM-DD)"), "departure_start"
+                ),
+                "departure_end": parse_iso_date(
+                    typer.prompt("Last departure date (YYYY-MM-DD)"), "departure_end"
+                ),
+            }
+        elif date_mode == "rolling":
+            date_values = {
+                "days_from_now": typer.prompt("Start days from now", default=1, type=int),
+                "days_to": typer.prompt("End days from now", default=30, type=int),
+            }
+        else:
+            raise ConfigError("Date mode must be exact, range, or rolling")
+        currency = typer.prompt("Currency", default="USD")
+        maximum_price = typer.prompt("Maximum price", type=float)
+        timezone = typer.prompt("IANA timezone", default="UTC")
+        telegram_enabled = typer.confirm("Enable Telegram notifications?", default=True)
+        token = typer.prompt("Telegram bot token", hide_input=True) if telegram_enabled else None
+        chat_id = typer.prompt("Telegram chat ID") if telegram_enabled else None
+        config = build_setup_config(
+            origins=origins,
+            destinations=destinations,
+            date_mode=date_mode,
+            date_values=date_values,
+            currency=currency,
+            maximum_price=maximum_price,
+            timezone=timezone,
+            telegram_enabled=telegram_enabled,
+            docker=docker,
+            config_path=config_path,
+        )
+        write_setup_files(
+            config,
+            config_path=config_path,
+            env_path=env_path,
+            telegram_token=token,
+            telegram_chat_id=chat_id,
+            docker=docker,
+        )
+    except (AutoFlyError, ValueError) as exc:
+        _abort(exc)
+    typer.echo(f"Created {config_path} and {env_path}.")
+    typer.echo(f"Next: load {env_path}, then run autofly doctor --config {config_path}")
 
 
 @config_app.command("validate")
@@ -180,6 +264,40 @@ def check_command(
     _emit(result, json_output)
     if result.get("status") not in {"success", "dry_run"}:
         raise typer.Exit(4)
+
+
+@app.command("run")
+def run_command(
+    config: Annotated[Path | None, typer.Option("--config", "-c")] = None,
+) -> None:
+    """Continuously run all watches using the configured interval and jitter."""
+    typer.echo("AutoFly scheduler started; press Ctrl+C to stop.")
+    while True:
+        try:
+            loaded = _load(config)
+            db = _database(loaded)
+            try:
+                with ProcessLock(loaded.scheduler.lock_path):
+                    result = WatchEngine(loaded, db, _source(loaded), _notifiers(loaded)).run()
+            finally:
+                db.close()
+            _emit(result, False)
+        except AutoFlyError as exc:
+            typer.echo(f"Cycle error: {exc}", err=True)
+        try:
+            loaded = _load(config)
+            delay = next_delay_seconds(
+                loaded.scheduler.interval_hours, loaded.scheduler.jitter_minutes
+            )
+        except AutoFlyError as exc:
+            typer.echo(f"Configuration error: {exc}", err=True)
+            delay = 300
+        typer.echo(f"Next cycle in {delay / 3600:.2f} hours.")
+        try:
+            time.sleep(delay)
+        except KeyboardInterrupt:
+            typer.echo("AutoFly scheduler stopped.")
+            return
 
 
 @app.command("doctor")
