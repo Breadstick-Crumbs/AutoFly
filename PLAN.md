@@ -17,3 +17,13 @@ This file is intentionally short and is updated as milestones complete.
 - [x] Pin and checksum the native AMD64/ARM64 Flight GOAT toolchain installation.
 - [x] Add clean-environment and multi-architecture CI coverage.
 - [x] Document first install, updates, rollback, and operational checks.
+
+## v0.2 phase 2: private web dashboard
+
+- [x] Add authenticated dashboard APIs and read-only operational summaries.
+- [x] Add validated, atomic watch creation and editing with rollback backup.
+- [x] Add serialized manual check jobs using the existing process lock and query budget.
+- [x] Build a dependency-light responsive interface with no external browser assets.
+- [x] Add a loopback-only Compose profile and secure remote-access guidance.
+- [x] Complete final browser, Docker, package, and full-suite validation.
+- [x] Push the reviewed feature branch for merge into `main`.

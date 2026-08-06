@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>AutoFly Control Room</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#overview" aria-label="AutoFly home">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span><strong>AutoFly</strong><small>Control room</small></span>
+        </a>
+        <nav aria-label="Dashboard sections">
+          <a class="nav-link active" href="#overview">Overview</a>
+          <a class="nav-link" href="#watches">Watches</a>
+          <a class="nav-link" href="#history">Fare history</a>
+        </nav>
+        <div class="privacy-note">
+          <span class="privacy-dot"></span>
+          <div><strong>Private by design</strong><small>No telemetry · No AutoFly cloud</small></div>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Self-hosted fare intelligence</p>
+            <h1>Flight watch control room</h1>
+          </div>
+          <div class="topbar-actions">
+            <span id="source-status" class="status-pill neutral">Checking source…</span>
+            <button id="refresh-button" class="button ghost" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section id="overview" class="section hero-grid" aria-labelledby="overview-title">
+          <article class="hero-card">
+            <div>
+              <p class="eyebrow">Monitoring status</p>
+              <h2 id="overview-title">Your routes, quietly watched.</h2>
+              <p id="hero-copy" class="hero-copy">Loading your self-hosted monitor…</p>
+            </div>
+            <div class="hero-actions">
+              <button id="check-all-button" class="button primary" type="button">Check all now</button>
+              <span id="check-feedback" class="muted" role="status"></span>
+            </div>
+          </article>
+          <article class="schedule-card">
+            <p class="eyebrow">Next cadence</p>
+            <strong id="schedule-value">—</strong>
+            <span id="schedule-detail">Loading schedule…</span>
+          </article>
+        </section>
+
+        <section class="stats-grid" aria-label="Monitoring statistics">
+          <article><span>Active watches</span><strong id="stat-watches">—</strong><small id="stat-routes">— routes</small></article>
+          <article><span>Available fares</span><strong id="stat-fares">—</strong><small>latest observations</small></article>
+          <article><span>Alerts delivered</span><strong id="stat-alerts">—</strong><small>successful notifications</small></article>
+          <article><span>System health</span><strong id="stat-health">—</strong><small id="stat-health-detail">No cycle data</small></article>
+        </section>
+
+        <section id="watches" class="section panel" aria-labelledby="watches-title">
+          <div class="section-heading">
+            <div><p class="eyebrow">Rules</p><h2 id="watches-title">Flight watches</h2></div>
+            <button id="add-watch-button" class="button secondary" type="button">New watch</button>
+          </div>
+          <div id="watch-list" class="watch-grid" aria-live="polite"></div>
+        </section>
+
+        <section id="history" class="section panel" aria-labelledby="history-title">
+          <div class="section-heading">
+            <div><p class="eyebrow">Observed fares</p><h2 id="history-title">Recent history</h2></div>
+            <select id="history-watch" aria-label="Filter history by watch"><option value="">All watches</option></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Observed</th><th>Route</th><th>Departure</th><th>Airline</th><th>Stops</th><th>Price</th><th></th></tr></thead>
+              <tbody id="history-body"></tbody>
+            </table>
+            <p id="history-empty" class="empty-state" hidden>No fares have been observed yet.</p>
+          </div>
+        </section>
+
+        <section class="section panel cycles-panel" aria-labelledby="cycles-title">
+          <div class="section-heading"><div><p class="eyebrow">Operations</p><h2 id="cycles-title">Recent cycles</h2></div></div>
+          <div id="cycle-list" class="cycle-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="watch-dialog">
+      <form id="watch-form" method="dialog">
+        <div class="dialog-heading">
+          <div><p class="eyebrow">Watch editor</p><h2 id="dialog-title">New flight watch</h2></div>
+          <button class="icon-button" value="cancel" aria-label="Close">×</button>
+        </div>
+        <input id="original-id" type="hidden">
+        <div class="form-grid">
+          <label>Watch ID<input id="watch-id" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="kerala-to-uae"></label>
+          <label class="checkbox-field"><input id="watch-enabled" type="checkbox" checked><span>Watch enabled</span></label>
+          <label>Origins<span class="airport-input"><input id="origins" required autocomplete="off" placeholder="COK, CCJ, TRV"><span id="origins-suggestions" class="airport-suggestions"></span></span></label>
+          <label>Destinations<span class="airport-input"><input id="destinations" required autocomplete="off" placeholder="DXB, SHJ, AUH"><span id="destinations-suggestions" class="airport-suggestions"></span></span></label>
+          <label>Trip type<select id="trip-type"><option value="one_way">One way</option><option value="round_trip">Round trip (exact only)</option></select></label>
+          <label>Cabin<select id="cabin"><option value="economy">Economy</option><option value="premium_economy">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></label>
+          <label>Adults<input id="adults" type="number" min="1" max="9" value="1" required></label>
+          <label>Date mode<select id="date-mode"><option value="range">Date range</option><option value="exact">Exact date</option><option value="rolling">Rolling window</option></select></label>
+        </div>
+        <div id="dates-exact" class="form-grid date-fields" hidden>
+          <label>Departure<input id="exact-departure" type="date"></label>
+          <label id="return-field">Return<input id="exact-return" type="date"></label>
+        </div>
+        <div id="dates-range" class="form-grid date-fields">
+          <label>First departure<input id="range-start" type="date"></label>
+          <label>Last departure<input id="range-end" type="date"></label>
+        </div>
+        <div id="dates-rolling" class="form-grid date-fields" hidden>
+          <label>Start days from now<input id="rolling-start" type="number" min="0" max="730" value="1"></label>
+          <label>End days from now<input id="rolling-end" type="number" min="0" max="730" value="30"></label>
+        </div>
+        <div class="form-grid divider-top">
+          <label>Currency<input id="currency" required maxlength="3" value="USD" placeholder="USD"></label>
+          <label>Maximum price<input id="maximum-price" required type="number" min="0.01" step="0.01"></label>
+          <label>Maximum stops<select id="max-stops"><option value="0">Direct only</option><option value="1" selected>Up to 1 stop</option><option value="2">Up to 2 stops</option><option value="3">Up to 3 stops</option><option value="">Any</option></select></label>
+          <label>Maximum layover hours<input id="max-layover" type="number" min="0" max="72" step="0.5" placeholder="Optional"></label>
+          <label class="checkbox-field"><input id="self-transfer" type="checkbox"><span>Allow self-transfers</span></label>
+          <label>Alert cooldown hours<input id="cooldown" type="number" min="0" step="1" value="24"></label>
+        </div>
+        <p id="form-error" class="form-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button class="button ghost" value="cancel" type="button" id="cancel-watch">Cancel</button>
+          <button class="button primary" type="submit">Save watch</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

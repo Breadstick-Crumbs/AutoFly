@@ -13,8 +13,9 @@ AutoFly is an open-source, self-hosted service that watches configured flight fa
 - Replaceable fare-source and notification interfaces
 - SQLite price history, stable itinerary identity, cooldowns, and price-drop/reappearance alerts
 - Telegram and versioned JSON webhook notifications
+- Private responsive dashboard for watch management, fare history, and manual checks
 - One-shot CLI suitable for systemd timers, cron, and Docker Compose
-- No AutoFly account, telemetry, public port, paid fare API, AI model, or GPU
+- No AutoFly account, telemetry, public port by default, paid fare API, AI model, or GPU
 
 AutoFly discovers fares and provides a search or booking link. It never purchases tickets.
 
@@ -34,8 +35,8 @@ docker compose run --rm autofly check --all --dry-run
 docker compose up -d autofly
 ```
 
-The setup wizard creates private `config.yaml` and `.env` files without overwriting existing
-ones. The `autofly` container runs a cycle immediately, then every configured interval plus
+The setup wizard creates private `autofly-config/config.yaml` and `.env` files without overwriting
+existing ones. The `autofly` container runs a cycle immediately, then every configured interval plus
 randomized jitter. `docker compose logs -f autofly` shows its status.
 
 On Linux, if your account is not UID/GID 1000, run setup with your IDs so the generated files
@@ -81,6 +82,22 @@ watches:
 
 See [`config.example.yaml`](config.example.yaml) for two complete watches and [`docs/configuration.md`](docs/configuration.md) for every setting.
 
+## Private dashboard
+
+The optional dashboard edits watches, shows recent fare and cycle history, reports source health,
+and starts manual checks. It never displays or edits notification secrets. Install the web extra
+for native use, or enable the Compose profile:
+
+```bash
+# Put a random value of at least 16 characters in .env as AUTOFLY_WEB_PASSWORD.
+docker compose --profile web up -d autofly web
+ssh -L 8080:127.0.0.1:8080 user@your-server
+```
+
+Open `http://127.0.0.1:8080` and sign in as `autofly`. The port is bound to the server's loopback
+interface, so the SSH tunnel is the supported remote-access path. See
+[`docs/dashboard.md`](docs/dashboard.md) before exposing it through a TLS reverse proxy.
+
 ## Notifications
 
 For Telegram, create a bot with BotFather, message it once, determine the target chat ID, then set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the service environment. Enable `notifications.telegram` in YAML and run `autofly notify-test`. Secrets are read only from the named environment variables and are never written to the database or logs.
@@ -89,11 +106,14 @@ The generic webhook emits the versioned schema documented in [`docs/notification
 
 ## Deployment
 
-- Docker: run the setup wizard and `docker compose up -d autofly`; scheduling is built in.
+- Docker: run the setup wizard and `docker compose up -d autofly`; scheduling is built in. The
+  dashboard is an optional profile.
 - Native/systemd/cron: see [`docs/deployment.md`](docs/deployment.md).
 - Troubleshooting: see [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
-No HTTP port is exposed. ARM64 and AMD64 are supported when Python, Node, and Flight GOAT are available for the architecture; NVIDIA GPUs are unused.
+No HTTP port is exposed by the scheduler. The optional dashboard binds only to host loopback by
+default. ARM64 and AMD64 are supported when Python, Node, and Flight GOAT are available for the
+architecture; NVIDIA GPUs are unused.
 
 ## Extending AutoFly
 
@@ -111,7 +131,7 @@ All configuration, secrets, browser state, and fare history stay on your host. A
 
 ## Project status, license, and attribution
 
-This is the initial `0.1.0` alpha. AutoFly uses Apache-2.0 because its explicit patent grant and permissive contribution terms are suitable for an adapter ecosystem; see [`LICENSE`](LICENSE). Contributions are welcome under [`CONTRIBUTING.md`](CONTRIBUTING.md).
+This is the `0.2.0` alpha. AutoFly uses Apache-2.0 because its explicit patent grant and permissive contribution terms are suitable for an adapter ecosystem; see [`LICENSE`](LICENSE). Contributions are welcome under [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 The primary adapter invokes [Flight GOAT](https://printingpress.dev/library/travel/flight-goat), created by Matt Van Horn and contributors as part of the [Printing Press Library](https://github.com/mvanhorn/printing-press-library). The tested release is `2026.8.1`, source commit `854c0465aaa9c275485338c2be7ef0bcaddc4e89`; its directory contains an Apache-2.0 license and NOTICE. The npm installer wrapper `@mvanhorn/printing-press-library@0.1.19` reports an MIT license. AutoFly does not copy its source; the optional Docker build compiles the pinned external CLI and retains the required license/NOTICE attribution in the image.
 

@@ -36,8 +36,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cp config.example.yaml config.yaml && cp .env.example .env
-      - run: docker compose config --quiet
+      - run: mkdir -p autofly-config && cp config.example.yaml autofly-config/config.yaml && cp .env.example .env
+      - run: docker compose config --quiet && docker compose --profile web config --quiet
       - run: docker build --pull --tag autofly:ci .
       - run: docker compose run --rm autofly doctor
 

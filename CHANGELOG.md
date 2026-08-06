@@ -4,6 +4,20 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-07
+
+### Added
+
+- Private, responsive web dashboard for watch management, fare history, source health, and manual checks.
+- Optional HTTP Basic authentication and same-origin mutation protection for remote deployments.
+- Atomic validated YAML updates with one-generation configuration backups.
+- Loopback-only Docker Compose dashboard profile and SSH-tunnel deployment guidance.
+
+### Changed
+
+- Compose configuration now lives at `autofly-config/config.yaml`, allowing the dashboard to use
+  atomic file replacement while the scheduler retains a read-only mount.
+
 ### Fixed
 
 - Suppress HTTP transport request logging so token-bearing Telegram API URLs are never emitted.
