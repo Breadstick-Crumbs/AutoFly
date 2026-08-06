@@ -30,4 +30,3 @@ watches:
     trip: {type: round_trip, adults: 1, cabin: economy}
     dates: {mode: exact, departure: 2026-12-10, return: 2026-12-20}
     deal: {currency: GBP, maximum_price: 450, max_stops: 1}
-
