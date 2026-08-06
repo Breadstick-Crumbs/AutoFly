@@ -55,6 +55,15 @@ def test_malformed_flight_goat_output(payload: object) -> None:
         parse_flights(payload, request())
 
 
+def test_isolated_invalid_flight_does_not_discard_valid_offers() -> None:
+    payload = json.loads(fixture("flight_goat_flights.json"))
+    payload["flights"].append({"price": 0})
+
+    offers = parse_flights(payload, request())
+
+    assert len(offers) == 2
+
+
 def test_safe_argument_array() -> None:
     seen: list[list[str]] = []
 
@@ -83,6 +92,17 @@ def test_subprocess_timeout_retries_then_fails() -> None:
     with pytest.raises(SourceError, match="timed out"):
         source.search(request())
     assert calls == 2
+
+
+def test_missing_executable_is_reported_cleanly() -> None:
+    def runner(args: list[str], timeout: float, limit: int):
+        raise FileNotFoundError(args[0])
+
+    source = FlightGoatSource(
+        FlightGoatConfig(command="missing-flight-goat", max_retries=0), runner=runner
+    )
+    with pytest.raises(SourceError, match="Cannot start Flight GOAT executable"):
+        source.search(request())
 
 
 @pytest.mark.parametrize(("code", "stderr"), [(7, b"rate limited"), (5, b"HTTP 429 from upstream")])

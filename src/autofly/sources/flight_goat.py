@@ -132,6 +132,10 @@ class FlightGoatSource:
                     ) from exc
                 self._sleep(2**attempt)
                 continue
+            except OSError as exc:
+                raise SourceError(
+                    f"Cannot start Flight GOAT executable: {self.config.command}"
+                ) from exc
             finally:
                 if pace:
                     self._last_request_at = self._clock()
@@ -190,6 +194,7 @@ def parse_flights(payload: Any, request: SearchRequest) -> list[FareOffer]:
     if not isinstance(payload, dict) or not isinstance(payload.get("flights"), list):
         raise SourceOutputError("Flight GOAT flights output has no flights array")
     result: list[FareOffer] = []
+    invalid_count = 0
     for index, raw in enumerate(payload["flights"]):
         try:
             valid_legs = isinstance(raw, dict) and isinstance(raw.get("legs"), list)
@@ -236,8 +241,10 @@ def parse_flights(payload: Any, request: SearchRequest) -> list[FareOffer]:
                     raw_reference=f"flight-index:{index}",
                 )
             )
-        except (KeyError, TypeError, ValueError, InvalidOperation) as exc:
-            raise SourceOutputError(f"Flight GOAT flight {index} failed validation") from exc
+        except (KeyError, TypeError, ValueError, InvalidOperation):
+            invalid_count += 1
+    if invalid_count and not result:
+        raise SourceOutputError("All Flight GOAT flights failed validation")
     return result
 
 

@@ -7,6 +7,8 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 ### Fixed
 
 - Suppress HTTP transport request logging so token-bearing Telegram API URLs are never emitted.
+- Report missing Flight GOAT executables without an unhandled traceback.
+- Ignore isolated invalid source offers while rejecting wholly malformed result sets.
 
 ## [0.1.0] - 2026-08-06
 
