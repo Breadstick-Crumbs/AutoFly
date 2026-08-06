@@ -41,7 +41,7 @@ def test_validate_routes_watches_and_dry_run(tmp_path: Path, monkeypatch) -> Non
     assert '"queries_executed": 0' in dry_run.stdout
 
 
-def test_check_requires_exactly_one_selector(tmp_path: Path) -> None:
+def test_check_selector_rules_and_bare_dry_run(tmp_path: Path) -> None:
     path = tmp_path / "config.yaml"
     runner.invoke(app, ["init", "--path", str(path)])
     neither = runner.invoke(app, ["check", "--dry-run", "--config", str(path)])
@@ -49,5 +49,6 @@ def test_check_requires_exactly_one_selector(tmp_path: Path) -> None:
         app,
         ["check", "--all", "--watch", "sample-cok-dxb", "--dry-run", "--config", str(path)],
     )
-    assert neither.exit_code == 2
+    assert neither.exit_code == 0
+    assert '"queries_executed": 0' in neither.stdout
     assert both.exit_code == 2

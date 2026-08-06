@@ -128,6 +128,7 @@ class WatchEngine:
             if rate_limited or budget_exceeded:
                 break
         metrics.query_budget_usage = budget.used
+        total_duration = (datetime.now(UTC) - cycle_started).total_seconds()
         success = metrics.failed_searches == 0
         if success:
             status = "success"
@@ -137,13 +138,23 @@ class WatchEngine:
             status = "budget_exceeded"
         else:
             status = "failed"
-        self.db.finish_cycle(cycle_id, status, metrics.as_dict())
+        stored_metrics: dict[str, Any] = {
+            **metrics.as_dict(),
+            "source": self.source.name,
+            "watch_ids": [watch.id for watch in selected],
+            "total_duration_seconds": round(total_duration, 3),
+        }
+        self.db.finish_cycle(cycle_id, status, stored_metrics)
         unhealthy, recovered = self.db.update_health(success)
         if unhealthy:
             self._send_health(cycle_id, "health_unhealthy", "Three consecutive cycles failed")
         elif recovered:
             self._send_health(cycle_id, "health_recovered", "Fare checks are healthy again")
-        output: dict[str, Any] = {"cycle_id": cycle_id, "status": status, **metrics.as_dict()}
+        output: dict[str, Any] = {
+            "cycle_id": cycle_id,
+            "status": status,
+            **stored_metrics,
+        }
         log_event(logger, "cycle_complete", **output)
         return output
 

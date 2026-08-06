@@ -156,8 +156,13 @@ def check_command(
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Run one fare-check cycle."""
-    if all_watches == (watch is not None):
-        _abort(ConfigError("Choose exactly one of --all or --watch"))
+    if all_watches and watch is not None:
+        _abort(ConfigError("Choose only one of --all or --watch"))
+    if not all_watches and watch is None:
+        if dry_run:
+            all_watches = True
+        else:
+            _abort(ConfigError("Choose --all or --watch"))
     try:
         loaded = _load(config)
         db = _database(loaded)
