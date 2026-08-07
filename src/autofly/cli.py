@@ -346,6 +346,22 @@ def web_command(
     )
 
 
+@app.command("telegram")
+def telegram_command(
+    config: Annotated[Path | None, typer.Option("--config", "-c")] = None,
+) -> None:
+    """Run the private Telegram watch-management interface."""
+    from autofly.telegram_bot import TelegramControlBot
+
+    path = _config_path(config)
+    try:
+        bot = TelegramControlBot(path)
+        typer.echo("AutoFly Telegram controls started; press Ctrl+C to stop.")
+        bot.run_forever()
+    except AutoFlyError as exc:
+        _abort(exc, 3)
+
+
 @app.command("doctor")
 def doctor_command(
     config: Annotated[Path | None, typer.Option("--config", "-c")] = None,
@@ -404,11 +420,29 @@ def doctor_command(
             ),
         ]:
             missing = [item for item in variables if enabled and not os.environ.get(item)]
+            control_chat_invalid = (
+                name == "telegram"
+                and loaded.notifications.telegram.control_enabled
+                and not missing
+                and not os.environ.get(loaded.notifications.telegram.chat_id_env, "").isdigit()
+            )
             checks.append(
                 {
                     "check": name,
-                    "status": "error" if missing else ("ok" if enabled else "disabled"),
-                    "detail": f"missing: {', '.join(missing)}" if missing else "ready",
+                    "status": (
+                        "error"
+                        if missing or control_chat_invalid
+                        else ("ok" if enabled else "disabled")
+                    ),
+                    "detail": (
+                        f"missing: {', '.join(missing)}"
+                        if missing
+                        else (
+                            "control interface requires a private numeric chat ID"
+                            if control_chat_invalid
+                            else "ready"
+                        )
+                    ),
                 }
             )
     except Exception as exc:
