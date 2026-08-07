@@ -14,6 +14,9 @@ Run `autofly init`, then validate with `autofly config validate`. YAML `version`
 - `sources.flight_goat`: enable flag, executable name/path, minimum pace (never below two seconds), subprocess timeout, output limit, tested version, retries, and maximum exact verifications after each date scan.
 - `sources.playwright`: disabled by default; persistent profile, locale, currency, headless mode, diagnostics, and timeout. It is selected only when Flight GOAT is disabled explicitly. v0.1 browser fallback supports exact dates only.
 - `notifications`: providers are independently enabled and name environment variables rather than containing secrets.
+- `notifications.telegram.control_enabled`: opt into the private long-polling Telegram management
+  interface. The configured chat ID must be a private chat. `poll_timeout_seconds` controls only
+  the Bot API long-poll duration, not fare-search timing.
 
 ## Watches
 

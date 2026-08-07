@@ -45,3 +45,12 @@ This file is intentionally short and is updated as milestones complete.
 - [x] Keep pre-migration observations explicitly marked as not evaluated.
 - [x] Add manual CI dispatch and explicit all-branch push triggers.
 - [x] Complete migration, browser, package, CI, release, and live deployment validation.
+
+## v0.2 phase 5: Telegram control center
+
+- [x] Add a private chat-ID-bound command and inline-button interface.
+- [x] Add guided creation and editing for complete watch rules.
+- [x] Add pause, resume, delete, search, recent-deal, and status actions.
+- [x] Reuse configuration validation, atomic backups, process locking, and query budgets.
+- [x] Add Compose, systemd, security, and operator documentation.
+- [ ] Complete offline, package, deployment, and live Telegram interaction validation.

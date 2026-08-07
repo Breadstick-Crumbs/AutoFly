@@ -17,6 +17,8 @@ Never include real bot tokens, webhook URLs, cookies, browser profiles, or route
 - Flight GOAT and Playwright contact third-party fare sites; their behavior and terms can change.
 - Webhooks require HTTPS and reject non-global destinations unless the administrator explicitly opts into trusted private networks.
 - Subprocesses use argument arrays, timeouts, bounded reads, and no shell.
+- Telegram controls accept commands only from the exact configured private chat ID. Group control
+  is not supported, and the controller never removes an existing Telegram webhook automatically.
 
 Administrators must protect `/etc/autofly/autofly.env`, the SQLite database, diagnostics, and any persistent browser profile; run as a dedicated non-root user and keep dependencies updated.
 

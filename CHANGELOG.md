@@ -6,6 +6,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) and s
 
 ### Added
 
+- Private Telegram control interface for guided watch creation and editing, watch lifecycle
+  actions, locked fare checks, qualifying results, and monitoring status.
+- Docker Compose and hardened systemd services for the long-polling Telegram controller.
 - Plain-language dashboard onboarding, setup-readiness indicators, and a live watch-rule preview.
 - Persisted deal qualification explanations, fare-result filters, and per-route price trends.
 - Sanitized notification-delivery and fare-source diagnostic summaries.
