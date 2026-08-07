@@ -14,6 +14,7 @@ sources:
 notifications:
   telegram:
     enabled: false
+    control_enabled: false
   webhook:
     enabled: false
 watches:
