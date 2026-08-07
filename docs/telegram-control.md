@@ -76,9 +76,22 @@ docker compose --profile web --profile telegram up -d autofly web telegram
 
 ## systemd
 
-`deploy/systemd/autofly-telegram.service` expects its editable configuration at
-`/var/lib/autofly/config.yaml`. Copy the reviewed configuration there with owner `autofly`, update
-the timer service to read the same path, then enable the control service:
+For the single-user installation at `~/autofly`, install the included user service:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp deploy/systemd/autofly-telegram-user.service ~/.config/systemd/user/autofly-telegram.service
+systemctl --user daemon-reload
+systemctl --user enable --now autofly-telegram.service
+journalctl --user -u autofly-telegram.service -f
+```
+
+The unit uses `%h`, so no username is embedded in the file. It expects configuration and secrets
+under `~/.config/autofly/` and persistent state under `~/.local/share/autofly/`.
+
+For a dedicated system account, `deploy/systemd/autofly-telegram.service` expects its editable
+configuration at `/var/lib/autofly/config.yaml`. Copy the reviewed configuration there with owner
+`autofly`, update the timer service to read the same path, then enable the control service:
 
 ```bash
 sudo install -o autofly -g autofly -m 0600 /etc/autofly/config.yaml /var/lib/autofly/config.yaml
