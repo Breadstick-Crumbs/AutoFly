@@ -53,4 +53,4 @@ This file is intentionally short and is updated as milestones complete.
 - [x] Add pause, resume, delete, search, recent-deal, and status actions.
 - [x] Reuse configuration validation, atomic backups, process locking, and query budgets.
 - [x] Add Compose, systemd, security, and operator documentation.
-- [ ] Complete offline, package, deployment, and live Telegram interaction validation.
+- [x] Complete offline, package, deployment, and live Telegram interaction validation.
