@@ -70,5 +70,30 @@ services:
     tmpfs:
       - /tmp:size=64m,mode=1777
 
+  telegram:
+    profiles: ["telegram"]
+    build:
+      context: .
+      args:
+        FLIGHT_GOAT_COMMIT: 854c0465aaa9c275485338c2be7ef0bcaddc4e89
+        APP_UID: "${AUTOFLY_UID:-1000}"
+        APP_GID: "${AUTOFLY_GID:-1000}"
+    image: autofly:0.2.0
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: true
+    volumes:
+      - ./autofly-config:/etc/autofly:rw
+      - autofly-data:/var/lib/autofly
+    command: ["telegram"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
 volumes:
   autofly-data:

@@ -11,6 +11,7 @@ import yaml
 
 from autofly.config import AppConfig, WatchConfig, validate_config_data
 from autofly.errors import ConfigError
+from autofly.locking import ProcessLock
 
 
 class ConfigStore:
@@ -19,13 +20,14 @@ class ConfigStore:
     def __init__(self, path: Path):
         self.path = path
         self._lock = threading.RLock()
+        self._edit_lock_path = path.with_suffix(path.suffix + ".lock")
 
     def load(self) -> AppConfig:
         with self._lock:
             return validate_config_data(self._read_raw())
 
     def save_watch(self, watch: WatchConfig, *, original_id: str | None = None) -> AppConfig:
-        with self._lock:
+        with self._lock, ProcessLock(self._edit_lock_path):
             raw = self._read_raw()
             watches = raw.get("watches")
             if not isinstance(watches, list):
@@ -48,7 +50,7 @@ class ConfigStore:
             return validated
 
     def set_enabled(self, watch_id: str, enabled: bool) -> AppConfig:
-        with self._lock:
+        with self._lock, ProcessLock(self._edit_lock_path):
             raw = self._read_raw()
             watches = raw.get("watches")
             if not isinstance(watches, list):
@@ -60,6 +62,20 @@ class ConfigStore:
                     self._write_raw(raw)
                     return validated
             raise ConfigError(f"Unknown watch ID: {watch_id}")
+
+    def delete_watch(self, watch_id: str) -> AppConfig:
+        with self._lock, ProcessLock(self._edit_lock_path):
+            raw = self._read_raw()
+            watches = raw.get("watches")
+            if not isinstance(watches, list):
+                raise ConfigError("Configuration watches must be a list")
+            remaining = [item for item in watches if _watch_id(item) != watch_id]
+            if len(remaining) == len(watches):
+                raise ConfigError(f"Unknown watch ID: {watch_id}")
+            raw["watches"] = remaining
+            validated = validate_config_data(raw)
+            self._write_raw(raw)
+            return validated
 
     def _read_raw(self) -> dict[str, Any]:
         try:

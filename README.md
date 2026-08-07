@@ -12,7 +12,7 @@ AutoFly is an open-source, self-hosted service that watches configured flight fa
 - Rolling and fixed-range one-way cheapest-date discovery followed by exact verification
 - Replaceable fare-source and notification interfaces
 - SQLite price history, stable itinerary identity, cooldowns, and price-drop/reappearance alerts
-- Telegram and versioned JSON webhook notifications
+- Telegram alerts plus a private conversational watch-management interface
 - Private responsive dashboard for watch management, fare history, and manual checks
 - Deal explanations, result filters, price trends, and sanitized delivery/source health
 - One-shot CLI suitable for systemd timers, cron, and Docker Compose
@@ -101,7 +101,7 @@ interface, so the SSH tunnel is the supported remote-access path. See
 
 ## Notifications
 
-For Telegram, create a bot with BotFather, message it once, determine the target chat ID, then set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the service environment. Enable `notifications.telegram` in YAML and run `autofly notify-test`. Secrets are read only from the named environment variables and are never written to the database or logs.
+For Telegram, create a bot with BotFather, message it once, determine the target chat ID, then set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the service environment. Enable `notifications.telegram` in YAML and run `autofly notify-test`. Set `control_enabled: true` and run `autofly telegram` to create, edit, pause, search, and inspect watches directly from that private chat. See [Telegram control](docs/telegram-control.md). Secrets are read only from the named environment variables and are never written to the database or logs.
 
 The generic webhook emits the versioned schema documented in [`docs/notifications.md`](docs/notifications.md). HTTPS is required; loopback/private destinations require an explicit opt-in.
 

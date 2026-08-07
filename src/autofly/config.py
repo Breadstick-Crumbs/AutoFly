@@ -75,9 +75,17 @@ class SourcesConfig(BaseModel):
 
 class TelegramConfig(BaseModel):
     enabled: bool = False
+    control_enabled: bool = False
     bot_token_env: str = "TELEGRAM_BOT_TOKEN"  # noqa: S105 - environment variable name
     chat_id_env: str = "TELEGRAM_CHAT_ID"
     timeout_seconds: float = Field(default=15, ge=1, le=60)
+    poll_timeout_seconds: int = Field(default=25, ge=5, le=50)
+
+    @model_validator(mode="after")
+    def controls_require_notifications(self) -> TelegramConfig:
+        if self.control_enabled and not self.enabled:
+            raise ValueError("control_enabled requires enabled: true")
+        return self
 
 
 class WebhookConfig(BaseModel):

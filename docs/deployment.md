@@ -44,6 +44,16 @@ Open `http://127.0.0.1:8080` locally and sign in as `autofly`. Compose binds onl
 loopback interface. See [`dashboard.md`](dashboard.md) for the security model and reverse-proxy
 requirements.
 
+To run the private Telegram watch-management interface, enable
+`notifications.telegram.control_enabled`, ensure `TELEGRAM_CHAT_ID` is a private chat, and start:
+
+```bash
+docker compose --profile telegram up -d autofly telegram
+```
+
+It exposes no port. See [`telegram-control.md`](telegram-control.md) for commands, security, and
+native systemd installation.
+
 ### Upgrading an existing Compose checkout from 0.1
 
 The 0.1 Compose setup stored `config.yaml` in the repository root. Preserve it and copy it into the

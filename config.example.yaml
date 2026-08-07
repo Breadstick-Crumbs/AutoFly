@@ -31,6 +31,9 @@ sources:
 notifications:
   telegram:
     enabled: true
+    # Runs the private watch-management bot when `autofly telegram` is started.
+    # TELEGRAM_CHAT_ID must identify a private chat, not a group.
+    control_enabled: false
     bot_token_env: TELEGRAM_BOT_TOKEN
     chat_id_env: TELEGRAM_CHAT_ID
   webhook:
@@ -77,4 +80,3 @@ watches:
       currency: GBP
       maximum_price: 450
       max_stops: 1
-

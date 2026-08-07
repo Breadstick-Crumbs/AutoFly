@@ -1,0 +1,27 @@
+[Unit]
+Description=AutoFly private Telegram controls
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=autofly
+Group=autofly
+WorkingDirectory=/opt/autofly
+Environment=AUTOFLY_CONFIG=/var/lib/autofly/config.yaml
+Environment=AUTOFLY_DATABASE_PATH=/var/lib/autofly/autofly.db
+Environment=AUTOFLY_LOCK_PATH=/var/lib/autofly/autofly.lock
+Environment=PATH=/opt/autofly/.venv/bin:/var/lib/autofly/.local/bin:/usr/local/bin:/usr/bin
+EnvironmentFile=-/etc/autofly/autofly.env
+ExecStart=/opt/autofly/.venv/bin/autofly telegram
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/autofly
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
