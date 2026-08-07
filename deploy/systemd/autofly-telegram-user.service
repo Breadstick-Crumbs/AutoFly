@@ -1,0 +1,22 @@
+[Unit]
+Description=AutoFly private Telegram controls
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/autofly
+EnvironmentFile=%h/.config/autofly/autofly.env
+Environment=PATH=%h/.local/bin:/usr/bin:/bin
+ExecStart=%h/autofly/.venv/bin/autofly telegram --config %h/.config/autofly/config.yaml
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.config/autofly %h/.local/share/autofly
+UMask=0077
+
+[Install]
+WantedBy=default.target
