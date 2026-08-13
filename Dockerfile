@@ -6,7 +6,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     GOBIN=/out go install \
     "github.com/mvanhorn/printing-press-library/library/travel/flight-goat/cmd/flight-goat-pp-cli@${FLIGHT_GOAT_COMMIT}"
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm AS runtime
 ARG APP_VERSION=0.2.0
 ARG APP_UID=1000
 ARG APP_GID=1000
