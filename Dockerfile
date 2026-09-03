@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM golang:1.26.5-bookworm AS flight-goat-build
+FROM golang:1.27.1-bookworm AS flight-goat-build
 ARG FLIGHT_GOAT_COMMIT=854c0465aaa9c275485338c2be7ef0bcaddc4e89
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
